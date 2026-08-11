@@ -35,6 +35,7 @@ class WorldModel(nn.Module):
             z = torch.randn(batch_size, self.z_dim, device=s_t.device)
             
         x = torch.cat([s_t, a_t, z], dim=-1)
-        s_next = self.predictor(x)
+        delta = self.predictor(x)
+        s_next = s_t + delta
         
         return s_next

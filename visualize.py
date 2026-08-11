@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.colors import ListedColormap
 import numpy as np
+import imageio_ffmpeg
+
+plt.rcParams['animation.ffmpeg_path'] = imageio_ffmpeg.get_ffmpeg_exe()
 
 from env.gridworld import GridWorldEnv
 from modules.perception import Perception
@@ -116,9 +119,10 @@ def main():
 
     anim = animation.FuncAnimation(fig, update, frames=len(frames), interval=200, blit=False)
     
-    gif_path = "/Users/poutrainlouis/.gemini/antigravity-ide/brain/7c93c446-e29c-4a37-a6b1-6a070597c5b5/agent_run.gif"
-    anim.save(gif_path, writer='pillow', fps=5)
-    print(f"GIF sauvegardé dans : {gif_path}")
+    video_path = "agent_run.mp4"
+    writer = animation.FFMpegWriter(fps=5, extra_args=['-vcodec', 'libx264', '-pix_fmt', 'yuv420p'])
+    anim.save(video_path, writer=writer)
+    print(f"Vidéo sauvegardée dans : {video_path}")
 
 if __name__ == "__main__":
     main()

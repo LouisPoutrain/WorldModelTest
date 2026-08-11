@@ -70,19 +70,19 @@ def main():
     else:
         print("Aucun modèle existant trouvé. L'agent part de zéro.")
         
-    # Initialize Configurator with latent representations of goals
-    with torch.no_grad():
-        target_obs = create_synthetic_target_obs(env, 'target').unsqueeze(0)
-        station_obs = create_synthetic_target_obs(env, 'station').unsqueeze(0)
-        s_target = perception(target_obs)
-        s_station = perception(station_obs)
-        configurator.set_goals(s_target, s_station)
-        
-    num_episodes = 200
+    num_episodes = 600
     batch_size = 32
     
     print("Début de l'entraînement...")
     for episode in range(num_episodes):
+        # Mettre à jour les représentations latentes des cibles avec le CNN ACTUEL
+        with torch.no_grad():
+            target_obs = create_synthetic_target_obs(env, 'target').unsqueeze(0)
+            station_obs = create_synthetic_target_obs(env, 'station').unsqueeze(0)
+            s_target = perception(target_obs)
+            s_station = perception(station_obs)
+            configurator.set_goals(s_target, s_station)
+            
         x_t = env.reset()
         episode_reward = 0
         
@@ -95,42 +95,33 @@ def main():
             # 2. Configuration
             s_goal, w_energy, w_collision, w_goal = configurator.get_configuration(env.energy)
             
-            # 3. Planification (Actor Mode-2)
-            # Find the best action a_t
-            a_t, _, _ = actor.plan(
-                s_t, world_model, cost, s_goal, 
-                w_energy, w_collision, w_goal, env.energy
-            )
-            
-            # --- Exploration Epsilon-Greedy ---
-            # 15% du temps, on force l'agent à explorer au hasard pour éviter la paralysie
             import random
-            if random.random() < 0.15:
+            
+            # Phase 1 : Pré-entraînement (Exploration pure) pour structurer l'espace latent
+            if episode < 500:
                 a_t = random.randint(0, 3)
+            else:
+                # Phase 2 : Planification (Actor Mode-2) avec la boussole spatiale
+                a_t, _, _ = actor.plan(
+                    s_t, world_model, cost, s_goal, 
+                    w_energy, w_collision, w_goal, env.energy
+                )
+                
+                # --- Exploration Epsilon-Greedy (10%) ---
+                if random.random() < 0.10:
+                    a_t = random.randint(0, 3)
             
             # 4. Exécution
             x_next, reward, done = env.step(a_t)
             
-            # 5. Calcul du coût réel et Mémoire
+            # 5. Mémoire (Stockage de l'expérience et du reward)
             x_next_tensor = x_next.unsqueeze(0)
-            with torch.no_grad():
-                s_next = perception(x_next_tensor)
-                
-                # We calculate real collision and real energy for the exact C_intr
-                sim_energy = torch.tensor([[env.energy]], dtype=torch.float32)
-                sim_collision = torch.tensor([[0.0]]) # Assuming we can't perfectly detect it without env feedback
-                
-                c_intr = cost.intrinsic_cost(
-                    s_t, s_goal, w_energy, w_collision, w_goal,
-                    sim_energy=sim_energy, sim_collision=sim_collision
-                )
-                
-            memory.push(x_t_tensor, a_t, x_next_tensor, c_intr)
+            memory.push(x_t_tensor, a_t, x_next_tensor, reward, done)
             x_t = x_next
             
             # 6. Apprentissage (en arrière-plan)
             if len(memory) > batch_size:
-                x_batch, a_batch, x_next_batch, c_intr_batch = memory.sample(batch_size)
+                x_batch, a_batch, x_next_batch, reward_batch, done_batch = memory.sample(batch_size)
                 a_batch_onehot = F.one_hot(a_batch, num_classes=4).float()
                 
                 # Repass through main encoder to get fresh s_batch with gradients
@@ -142,7 +133,7 @@ def main():
                 
                 # -- Train World Model & Perception --
                 optimizer_wm.zero_grad()
-                # optimizer_critic.zero_grad()  # Critique désactivé
+                optimizer_critic.zero_grad()
                 
                 # z is sampled internally by the world_model forward pass
                 s_next_pred = world_model(s_batch, a_batch_onehot)
@@ -151,14 +142,30 @@ def main():
                 loss_pred = F.mse_loss(s_next_pred, s_next_batch_target)
                 
                 # VICReg / SIGReg Variance Loss on the batch to prevent representation collapse
-                # On veut que chaque dimension de l'espace latent ait une variance d'au moins 1
                 std = torch.sqrt(s_batch.var(dim=0) + 1e-04)
                 loss_var = torch.mean(F.relu(1.0 - std))
                 
                 loss_wm = loss_pred + 1.0 * loss_var
                 
-                loss_wm.backward()
+                loss_wm.backward(retain_graph=True)
+                
+                # -- Train Critic (TD-Learning) --
+                step_cost_batch = -reward_batch
+                
+                with torch.no_grad():
+                    V_next_batch = cost(s_next_batch_target)
+                
+                # Bellman equation: Target Cost = step_cost + gamma * V(s_next) * (1 - done)
+                target_value_batch = step_cost_batch + 0.9 * V_next_batch * (1.0 - done_batch)
+                
+                # On détache s_batch pour que le Critic n'interfère pas avec l'apprentissage du CNN (JEPA pur)
+                V_t_batch = cost(s_batch.detach())
+                
+                loss_critic = F.mse_loss(V_t_batch, target_value_batch)
+                loss_critic.backward()
+                
                 optimizer_wm.step()
+                optimizer_critic.step()
                 
                 # -- EMA Update for Target Encoder --
                 tau = 0.01

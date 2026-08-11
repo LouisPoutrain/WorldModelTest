@@ -31,7 +31,6 @@ class Actor:
                 action_sequences[:, t] = torch.multinomial(p_t, 1).squeeze(1)
             
             s_sim = s_t.repeat(self.N, 1) # (N, latent_dim)
-            sim_energy = torch.ones(self.N, 1) * current_energy
             total_costs = torch.zeros(self.N, 1)
             
             for t in range(self.H):
@@ -42,14 +41,8 @@ class Actor:
                 with torch.no_grad():
                     s_next = world_model(s_sim, a_t_onehot)
                     
-                sim_energy -= 1
-                sim_collision = torch.zeros(self.N, 1)
-                
                 with torch.no_grad():
-                    c_t = cost_module.intrinsic_cost(
-                        s_next, s_goal, w_energy, w_collision, w_goal, 
-                        sim_energy=sim_energy, sim_collision=sim_collision
-                    )
+                    c_t = cost_module(s_next)
                 
                 total_costs += (self.gamma ** t) * c_t
                 s_sim = s_next

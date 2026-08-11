@@ -13,7 +13,8 @@ class Perception(nn.Module):
             nn.Flatten(),
             nn.Linear(32 * 5 * 5, 64),
             nn.ReLU(),
-            nn.Linear(64, latent_dim)
+            nn.Linear(64, latent_dim),
+            nn.LayerNorm(latent_dim)
         )
         
     def forward(self, x):

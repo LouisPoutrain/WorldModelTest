@@ -37,12 +37,21 @@ class Actor:
                 a_t = action_sequences[:, t]
                 a_t_onehot = F.one_hot(a_t, num_classes=self.action_dim).float()
                 
-                # Predict next latent state, letting the world model sample 'z' internally
+                # 1. Prédiction du prochain état par le World Model
                 with torch.no_grad():
                     s_next = world_model(s_sim, a_t_onehot)
                     
+                # 2. Évaluation du coût par le Critique (Valeur à long terme)
                 with torch.no_grad():
-                    c_t = cost_module(s_next)
+                    c_critic = cost_module(s_next)
+                
+                # 3. Calcul du coût intrinsèque (Boussole spatiale / Heuristique)
+                # s_next: (N, latent_dim), s_goal: (1, latent_dim)
+                dist_to_goal = torch.sum((s_next - s_goal) ** 2, dim=1, keepdim=True)
+                
+                # 4. Combinaison (Le coût total pondéré)
+                # On multiplie par w_goal pour respecter le Configurator
+                c_t = (w_goal * dist_to_goal) + c_critic
                 
                 total_costs += (self.gamma ** t) * c_t
                 s_sim = s_next

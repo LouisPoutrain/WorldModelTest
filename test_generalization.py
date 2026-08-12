@@ -50,7 +50,7 @@ def main():
     world_model = WorldModel(latent_dim=latent_dim, action_dim=4, z_dim=4)
     cost = Cost(latent_dim=latent_dim)
     # L'acteur utilise 50 séquences et un horizon de 5
-    actor = Actor(action_dim=4, num_sequences=50, horizon=5, gamma=0.9, cem_iterations=3, elite_size=10)
+    actor = Actor(action_dim=4)
     
     checkpoint_path = os.path.join("checkpoints", "agent_checkpoint.pth")
     if os.path.exists(checkpoint_path):

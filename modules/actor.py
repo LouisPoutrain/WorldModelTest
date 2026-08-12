@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 class Actor:
-    def __init__(self, action_dim=4, num_sequences=50, horizon=5, gamma=0.9, cem_iterations=3, elite_size=10):
+    def __init__(self, action_dim=4, num_sequences=200, horizon=15, gamma=0.95, cem_iterations=5, elite_size=30):
         self.action_dim = action_dim
         self.N = num_sequences
         self.H = horizon
@@ -37,9 +37,10 @@ class Actor:
                 a_t = action_sequences[:, t]
                 a_t_onehot = F.one_hot(a_t, num_classes=self.action_dim).float()
                 
-                # 1. Prédiction du prochain état par le World Model
+                # 1. Prédiction du prochain état par le World Model (z=0 pour des prédictions déterministes)
                 with torch.no_grad():
-                    s_next = world_model(s_sim, a_t_onehot)
+                    z_zero = torch.zeros(self.N, world_model.z_dim)
+                    s_next = world_model(s_sim, a_t_onehot, z=z_zero)
                     
                 # 2. Évaluation du coût par le Critique (Valeur à long terme)
                 with torch.no_grad():

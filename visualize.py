@@ -44,7 +44,7 @@ def main():
     cost = Cost(latent_dim=latent_dim)
     # Using Actor with Epsilon Greedy is not strictly needed for visualization, 
     # but we'll just run it deterministically (epsilon=0) to see what it *wants* to do.
-    actor = Actor(action_dim=4, num_sequences=50, horizon=5, gamma=0.9, cem_iterations=3, elite_size=10)
+    actor = Actor(action_dim=4)
     
     checkpoint_path = os.path.join("checkpoints", "agent_checkpoint.pth")
     if os.path.exists(checkpoint_path):

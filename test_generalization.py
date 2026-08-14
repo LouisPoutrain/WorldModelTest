@@ -47,10 +47,10 @@ def main():
     latent_dim = 32
     perception = Perception(in_channels=4, latent_dim=latent_dim)
     configurator = Configurator(latent_dim=latent_dim)
-    world_model = WorldModel(latent_dim=latent_dim, action_dim=4, z_dim=4)
+    world_model = WorldModel(latent_dim=latent_dim, action_dim=4, hidden_dim=128)
     cost = Cost(latent_dim=latent_dim)
-    # L'acteur utilise 50 séquences et un horizon de 5
-    actor = Actor(action_dim=4)
+    # L'acteur a besoin d'une énorme puissance de calcul pour un horizon de 15
+    actor = Actor(action_dim=4, num_sequences=2000, horizon=15, cem_iterations=10, elite_size=100)
     
     checkpoint_path = os.path.join("checkpoints", "agent_checkpoint.pth")
     if os.path.exists(checkpoint_path):
@@ -59,9 +59,14 @@ def main():
         perception.load_state_dict(checkpoint['perception'])
         world_model.load_state_dict(checkpoint['world_model'])
         cost.load_state_dict(checkpoint['cost'])
+        print("Modèles restaurés avec succès !")
     else:
-        print("AUCUN POIDS TROUVÉ. Exécutez 'python main.py' d'abord.")
+        print("Aucun modèle trouvé ! Veuillez d'abord entraîner l'agent avec main.py")
         return
+        
+    perception.eval()
+    world_model.eval()
+    cost.eval()
 
     # Initialize Goals
     with torch.no_grad():
@@ -75,6 +80,8 @@ def main():
     energy_history = []
     
     x_t = env.reset()
+    h_t = world_model.init_hidden(1, device=x_t.device)
+    
     frames.append(env.render())
     energy_history.append(env.energy)
     
@@ -86,14 +93,17 @@ def main():
             
         s_goal, w_energy, w_collision, w_goal = configurator.get_configuration(env.energy)
         
-        # Planification pure, aucune exploration aléatoire
-        a_t, _, _ = actor.plan(
-            s_t, world_model, cost, s_goal, 
-            w_energy, w_collision, w_goal, env.energy
-        )
+        # Planification pure (distance au goal, pas de critique)
+        a_t, _, _ = actor.plan(s_t, h_t, world_model, s_goal)
         
         x_next, reward, done = env.step(a_t)
+        
+        a_t_onehot = F.one_hot(torch.tensor([a_t]), num_classes=4).float()
+        with torch.no_grad():
+            _, h_next = world_model.forward_step(s_t, a_t_onehot, h_t)
+            
         x_t = x_next
+        h_t = h_next
         frames.append(env.render())
         energy_history.append(env.energy)
         
@@ -122,9 +132,8 @@ def main():
 
     anim = animation.FuncAnimation(fig, update, frames=len(frames), interval=200, blit=False)
     
-    video_path = "generalization_run.mp4"
-    writer = animation.FFMpegWriter(fps=5, extra_args=['-vcodec', 'libx264', '-pix_fmt', 'yuv420p'])
-    anim.save(video_path, writer=writer)
+    video_path = "generalization_run.gif"
+    anim.save(video_path, writer='pillow', fps=5)
     print(f"Vidéo de généralisation sauvegardée dans : {video_path}")
 
 if __name__ == "__main__":

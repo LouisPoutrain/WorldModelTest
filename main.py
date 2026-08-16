@@ -47,15 +47,21 @@ def main():
     world_model = WorldModel(latent_dim=latent_dim, action_dim=4, hidden_dim=hidden_dim).to(device)
     cost = Cost(latent_dim=latent_dim).to(device)
     
-    actor = Actor(action_dim=4, num_sequences=2000, horizon=15, cem_iterations=10, elite_size=100)
+    # --- Phase 1 : Target Critic (EMA) pour stabiliser le TD-Learning ---
+    target_cost = copy.deepcopy(cost).to(device)
+    for param in target_cost.parameters():
+        param.requires_grad = False
+    
+    # Phase 3 : CEM avec compromis exploration/coût (500 séquences, horizon 10)
+    actor = Actor(action_dim=4, num_sequences=500, horizon=10, cem_iterations=10, elite_size=50)
     
     # Replay Buffer
     memory = ShortTermMemory(capacity=10000)
     sigreg = SIGReg().to(device)
     
-    # Optimizers
-    optimizer_wm = optim.Adam(list(world_model.parameters()) + list(perception.parameters()), lr=1e-4)
-    optimizer_critic = optim.Adam(cost.critic.parameters(), lr=1e-3)
+    # Phase 3 : LR ajustés (WM ralenti car déjà convergé, Critic accéléré)
+    optimizer_wm = optim.Adam(list(world_model.parameters()) + list(perception.parameters()), lr=5e-5)
+    optimizer_critic = optim.Adam(cost.critic.parameters(), lr=3e-4)
     
     checkpoint_dir = "checkpoints"
     os.makedirs(checkpoint_dir, exist_ok=True)
@@ -64,15 +70,16 @@ def main():
     start_episode = 0
     if os.path.exists(checkpoint_path):
         print(f"Chargement des poids depuis {checkpoint_path}...")
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, map_location=device)
         perception.load_state_dict(checkpoint['perception'])
         target_encoder.load_state_dict(checkpoint['target_encoder'])
         world_model.load_state_dict(checkpoint['world_model'])
         cost.load_state_dict(checkpoint['cost'])
-        optimizer_wm.load_state_dict(checkpoint['optimizer_wm'])
-        optimizer_critic.load_state_dict(checkpoint['optimizer_critic'])
-        # Par défaut on reprend à 5850 (dernier arrêt manuel connu) si l'info n'est pas dans le fichier
-        start_episode = checkpoint.get('episode', 5850)
+        # Phase 1 : Initialiser le Target Critic avec les poids du Critic chargé
+        target_cost.load_state_dict(checkpoint['cost'])
+        # On recrée les optimizers avec les nouveaux LR (Phase 3)
+        # Les anciens optimizer states ne sont plus compatibles avec les nouveaux LR
+        start_episode = checkpoint.get('episode', 0)
         print(f"Modèles restaurés avec succès ! Reprise à l'épisode {start_episode}.")
     else:
         print("Aucun modèle existant trouvé. L'agent part de zéro.")
@@ -131,8 +138,11 @@ def main():
             x_next, reward, done = env.step(a_t)
             x_next_tensor = x_next.unsqueeze(0).to(device)
             
-            # Stockage dans le Replay Buffer
-            memory.push(x_t_tensor, a_t, x_next_tensor, reward, done)
+            # Phase 2 : Reward Scaling (ramener les récompenses dans [-1, 1])
+            scaled_reward = reward / 100.0
+            
+            # Stockage dans le Replay Buffer (avec récompense normalisée)
+            memory.push(x_t_tensor, a_t, x_next_tensor, scaled_reward, done)
             
             # Mise à jour de l'état caché avec l'action réelle (inférence)
             a_t_onehot = F.one_hot(torch.tensor([a_t], device=device), num_classes=4).float()
@@ -199,8 +209,9 @@ def main():
                     done_flat = done_seq_batch.view(B * T, 1)
                     
                     V_t = cost(s_t_flat)
+                    # Phase 1 : Utiliser le TARGET Critic pour évaluer V(s_{t+1})
                     with torch.no_grad():
-                        V_next = cost(s_next_target_flat_detached)
+                        V_next = target_cost(s_next_target_flat_detached)
                         
                     target_value = step_cost_flat + 0.9 * V_next * (1.0 - done_flat)
                     loss_critic = F.mse_loss(V_t, target_value)
@@ -219,6 +230,10 @@ def main():
                     # EMA Target Encoder
                     tau = 0.01
                     for p_tgt, p_main in zip(target_encoder.parameters(), perception.parameters()):
+                        p_tgt.data.mul_(1.0 - tau).add_(p_main.data, alpha=tau)
+                    
+                    # Phase 1 : EMA Target Critic
+                    for p_tgt, p_main in zip(target_cost.parameters(), cost.parameters()):
                         p_tgt.data.mul_(1.0 - tau).add_(p_main.data, alpha=tau)
                         
                 except ValueError:
@@ -277,6 +292,7 @@ def main():
                 'target_encoder': target_encoder.state_dict(),
                 'world_model': world_model.state_dict(),
                 'cost': cost.state_dict(),
+                'target_cost': target_cost.state_dict(),
                 'optimizer_wm': optimizer_wm.state_dict(),
                 'optimizer_critic': optimizer_critic.state_dict()
             }, checkpoint_path)

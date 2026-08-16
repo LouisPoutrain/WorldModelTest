@@ -46,11 +46,12 @@ def main():
     actor = Actor(action_dim=4, num_sequences=2000, horizon=15, cem_iterations=10, elite_size=100)
     
     checkpoint_path = os.path.join("checkpoints", "agent_checkpoint.pth")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if not os.path.exists(checkpoint_path):
         print("❌ Aucun checkpoint trouvé!")
         return
     
-    checkpoint = torch.load(checkpoint_path)
+    checkpoint = torch.load(checkpoint_path, map_location=device)
     perception.load_state_dict(checkpoint['perception'])
     world_model.load_state_dict(checkpoint['world_model'])
     cost.load_state_dict(checkpoint['cost'])

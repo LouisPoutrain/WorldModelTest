@@ -49,13 +49,13 @@ def main():
     configurator = Configurator(latent_dim=latent_dim)
     world_model = WorldModel(latent_dim=latent_dim, action_dim=4, hidden_dim=128)
     cost = Cost(latent_dim=latent_dim)
-    # L'acteur a besoin d'une énorme puissance de calcul pour un horizon de 15
-    actor = Actor(action_dim=4, num_sequences=2000, horizon=15, cem_iterations=10, elite_size=100)
+    # CEM avec Critic intégré (compromis CPU)
+    actor = Actor(action_dim=4, num_sequences=500, horizon=10, cem_iterations=10, elite_size=50)
     
     checkpoint_path = os.path.join("checkpoints", "agent_checkpoint.pth")
     if os.path.exists(checkpoint_path):
         print(f"Chargement des poids depuis {checkpoint_path}...")
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'))
         perception.load_state_dict(checkpoint['perception'])
         world_model.load_state_dict(checkpoint['world_model'])
         cost.load_state_dict(checkpoint['cost'])
@@ -93,8 +93,8 @@ def main():
             
         s_goal, w_energy, w_collision, w_goal = configurator.get_configuration(env.energy)
         
-        # Planification pure (distance au goal, pas de critique)
-        a_t, _, _ = actor.plan(s_t, h_t, world_model, s_goal)
+        # Planification (Boussole + Critique)
+        a_t, _, _ = actor.plan(s_t, h_t, world_model, cost, s_goal)
         
         x_next, reward, done = env.step(a_t)
         

@@ -2,30 +2,33 @@ import torch
 import torch.nn.functional as F
 
 class Actor:
-    def __init__(self, action_dim=4, num_sequences=200, horizon=12, cem_iterations=5, elite_size=30):
+    def __init__(self, action_dim=4, num_sequences=200, horizon=12, cem_iterations=5, elite_size=30, gamma=0.9):
         self.action_dim = action_dim
         self.N = num_sequences
         self.H = horizon
         self.M = cem_iterations
         self.K = elite_size
+        self.gamma = gamma
         
-    def plan(self, s_t, h_t, world_model, s_goal):
+    def plan(self, s_t, h_t, world_model, cost_module, s_goal, w_goal=1.0):
         """
-        Planification par CEM (Cross-Entropy Method).
+        Planification par CEM (Cross-Entropy Method) combinant Boussole et Critique.
         s_t: (1, latent_dim) État latent actuel
         h_t: (1, hidden_dim) État caché actuel du RNN
         world_model: Le modèle du monde séquentiel
+        cost_module: Le réseau Critique (Cost)
         s_goal: (1, latent_dim) Cible
+        w_goal: Poids de la distance au goal dans le coût total
         """
         device = s_t.device
         best_cost = float('inf')
         best_sequence = None
         
-        # Initialize action probabilities uniformly: (H, action_dim)
+        # Initialisation uniforme des probabilités d'actions: (H, action_dim)
         action_probs = torch.ones(self.H, self.action_dim, device=device) / self.action_dim
         
         for iteration in range(self.M):
-            # Sample N action sequences from the current distribution: (N, H)
+            # Échantillonnage de N séquences d'actions
             action_sequences = torch.zeros((self.N, self.H), dtype=torch.long, device=device)
             for t in range(self.H):
                 p_t = action_probs[t].unsqueeze(0).repeat(self.N, 1)
@@ -39,30 +42,34 @@ class Actor:
                 for t in range(self.H):
                     a_t_sim = action_sequences[:, t]
                     a_t_onehot = F.one_hot(a_t_sim, num_classes=self.action_dim).float()
-                    # On avance d'un pas en mettant à jour l'état caché
+                    # Déroulement d'un pas temporel
                     s_sim, h_sim = world_model.forward_step(s_sim, a_t_onehot, h_sim)
+                
+                # 1. Coût Intrinsèque (Distance euclidienne au goal sur l'état final simulé)
+                dist_to_goal = F.mse_loss(
+                    s_sim, 
+                    s_goal.expand(self.N, -1), 
+                    reduction='none'
+                ).sum(dim=1)  # (N,)
+                
+                # 2. Coût prédit par le Critique (Valeur attendue de l'état futur)
+                c_critic = cost_module(s_sim).squeeze(-1)  # (N,)
+                
+                # 3. Combinaison des coûts (Boussole + Critique)
+                total_cost = (w_goal * dist_to_goal) + c_critic
             
-            # Coût = MSE entre le DERNIER état prédit et le goal
-            cost = F.mse_loss(
-                s_sim,  # (N, latent_dim)
-                s_goal.expand(self.N, -1),  # (N, latent_dim) 
-                reduction='none'
-            ).sum(dim=1)  # (N,)
-            
-            # Find the top K elite sequences (lowest cost)
-            top_costs, top_indices = torch.topk(cost, self.K, largest=False)
+            # Échantillonnage des K meilleures séquences ("élites")
+            top_costs, top_indices = torch.topk(total_cost, self.K, largest=False)
             elite_sequences = action_sequences[top_indices]  # (K, H)
             
-            # Update action probabilities based on elite sequences
+            # Mise à jour de la distribution de probabilité avec lissage de Laplace
             new_probs = torch.zeros_like(action_probs)
             for t in range(self.H):
                 counts = torch.bincount(elite_sequences[:, t], minlength=self.action_dim).float()
-                # Laplace smoothing
                 new_probs[t] = (counts + 0.1) / (self.K + 0.1 * self.action_dim)
                 
             action_probs = new_probs
             
-            # Keep track of the best overall
             if top_costs[0].item() < best_cost:
                 best_cost = top_costs[0].item()
                 best_sequence = elite_sequences[0]

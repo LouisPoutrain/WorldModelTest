@@ -128,8 +128,8 @@ def main():
             if episode < exploration_episodes:
                 a_t = random.randint(0, 3)
             else:
-                # L'acteur planifie en projetant h_t dans le futur
-                a_t, _, _ = actor.plan(s_t, h_t, world_model, s_goal)
+                # L'acteur planifie en projetant h_t dans le futur (Boussole + Critique)
+                a_t, _, _ = actor.plan(s_t, h_t, world_model, cost, s_goal)
                 
                 if random.random() < 0.10: # Epsilon-greedy
                     a_t = random.randint(0, 3)

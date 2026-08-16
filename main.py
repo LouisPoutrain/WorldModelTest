@@ -4,6 +4,8 @@ import torch.optim as optim
 import copy
 import os
 import random
+import csv
+import time
 
 from env.gridworld import GridWorldEnv
 from modules.perception import Perception
@@ -67,6 +69,21 @@ def main():
     os.makedirs(checkpoint_dir, exist_ok=True)
     checkpoint_path = os.path.join(checkpoint_dir, "agent_checkpoint.pth")
     
+    # --- Logger CSV ---
+    log_dir = "logs"
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, "training_log.csv")
+    csv_headers = [
+        "timestamp", "episode", "success_rate", "avg_steps",
+        "l_pred", "l_sigreg", "l_critic",
+        "v_target", "v_agent", "delta_v",
+        "latent_dist", "latent_std"
+    ]
+    # Créer le fichier avec headers si il n'existe pas
+    if not os.path.exists(log_path):
+        with open(log_path, 'w', newline='') as f:
+            csv.writer(f).writerow(csv_headers)
+    
     start_episode = 0
     if os.path.exists(checkpoint_path):
         print(f"Chargement des poids depuis {checkpoint_path}...")
@@ -99,6 +116,7 @@ def main():
     avg_loss_sigreg = 0.0
     avg_loss_critic = 0.0
     log_count = 0
+    total_steps_in_window = 0
     
     for episode in range(start_episode, num_episodes):
         x_t = env.reset().to(device)
@@ -250,6 +268,7 @@ def main():
         reached = env.agent_pos == env.target_pos
         if reached:
             recent_successes += 1
+        total_steps_in_window += step + 1
         
         phase = "🟢 EXPLORE" if episode < exploration_episodes else "🟠 PLAN"
         status = "✅" if reached else "❌"
@@ -257,33 +276,99 @@ def main():
         
         if (episode + 1) % 50 == 0:
             n = max(log_count, 1)
-            print(f"  \n  {'='*60}")
+            success_rate = recent_successes / 50.0
+            avg_steps = total_steps_in_window / 50.0
+            
+            # Barre de progression visuelle du taux de succès
+            bar_len = 25
+            filled = int(bar_len * success_rate)
+            bar = "█" * filled + "░" * (bar_len - filled)
+            
+            # Progression globale
+            progress = (episode + 1) / num_episodes
+            prog_filled = int(30 * progress)
+            prog_bar = "▓" * prog_filled + "░" * (30 - prog_filled)
+            
+            print(f"\n  {'━'*60}")
             print(f"  📊 RAPPORT (Épisodes {episode+2-50} à {episode+1})")
-            print(f"  {'='*60}")
-            print(f"  Taux de succès (50 derniers): {recent_successes}/50 ({recent_successes*2}%)")
-            print(f"  Pertes moyennes:")
+            print(f"  {'━'*60}")
+            print(f"  📈 Progression: [{prog_bar}] {progress*100:.1f}%")
+            print(f"  {'─'*60}")
+            
+            # Taux de succès avec barre visuelle
+            if success_rate >= 0.7:
+                emoji = "🟢"
+            elif success_rate >= 0.4:
+                emoji = "🟡"
+            else:
+                emoji = "🔴"
+            print(f"  {emoji} Succès: [{bar}] {recent_successes}/50 ({success_rate*100:.0f}%)")
+            print(f"  🦶 Pas moyens: {avg_steps:.1f} / 200")
+            
+            print(f"  {'─'*60}")
+            print(f"  📉 Pertes:")
             print(f"    L_pred (BPTT):   {avg_loss_pred/n:.6f}")
             print(f"    L_sigreg:        {avg_loss_sigreg/n:.6f}")
-            print(f"    L_critic (TD):   {avg_loss_critic/n:.6f}")
             
+            # Indicateur visuel pour L_critic
+            l_critic_val = avg_loss_critic / n
+            if l_critic_val < 1.0:
+                critic_status = "🟢 Excellent"
+            elif l_critic_val < 5.0:
+                critic_status = "🟡 En convergence"
+            elif l_critic_val < 15.0:
+                critic_status = "🟠 Instable"
+            else:
+                critic_status = "🔴 Diverge"
+            print(f"    L_critic (TD):   {l_critic_val:.6f}  {critic_status}")
+            
+            # Analyse du Critique (V-values)
             with torch.no_grad():
-                test_obs1 = create_synthetic_target_obs(env, 'target').unsqueeze(0).to(device)
-                test_obs2 = env.reset().unsqueeze(0).to(device)
-                s1 = perception(test_obs1)
-                s2 = perception(test_obs2)
-                dist = torch.sum((s1 - s2)**2).item()
-                s_std = s1.std().item()
+                test_obs_target = create_synthetic_target_obs(env, 'target').unsqueeze(0).to(device)
+                test_obs_agent = env.reset().unsqueeze(0).to(device)
+                s_target_test = perception(test_obs_target)
+                s_agent_test = perception(test_obs_agent)
+                
+                v_target = cost(s_target_test).item()
+                v_agent = cost(s_agent_test).item()
+                dist = torch.sum((s_target_test - s_agent_test)**2).item()
+                s_std = s_target_test.std().item()
             
-            print(f"  Santé de l'espace latent (ResNet):")
-            print(f"    Distance latente (target vs agent): {dist:.4f}")
-            print(f"    Std du vecteur latent: {s_std:.4f}")
-            print(f"  {'='*60}\n")
+            print(f"  {'─'*60}")
+            print(f"  🧠 Critique (V-values):")
+            print(f"    V(target):  {v_target:+.4f}  (devrait être bas = bon état)")
+            print(f"    V(agent):   {v_agent:+.4f}  (devrait être haut = loin du but)")
+            print(f"    ΔV:         {v_agent - v_target:+.4f}  (positif = le Critic sait où aller)")
+            
+            print(f"  {'─'*60}")
+            print(f"  🔬 Espace latent:")
+            print(f"    Distance (target↔agent): {dist:.4f}")
+            print(f"    Std vecteur latent:       {s_std:.4f}  {'✅' if 0.5 < s_std < 2.0 else '⚠️'}")
+            
+            # --- Écriture CSV ---
+            with open(log_path, 'a', newline='') as f:
+                csv.writer(f).writerow([
+                    time.strftime('%Y-%m-%d %H:%M:%S'),
+                    episode + 1,
+                    f"{success_rate:.4f}",
+                    f"{avg_steps:.1f}",
+                    f"{avg_loss_pred/n:.6f}",
+                    f"{avg_loss_sigreg/n:.6f}",
+                    f"{l_critic_val:.6f}",
+                    f"{v_target:.4f}",
+                    f"{v_agent:.4f}",
+                    f"{v_agent - v_target:.4f}",
+                    f"{dist:.4f}",
+                    f"{s_std:.4f}"
+                ])
+            print(f"  {'━'*60}\n")
             
             recent_successes = 0
             avg_loss_pred = 0.0
             avg_loss_sigreg = 0.0
             avg_loss_critic = 0.0
             log_count = 0
+            total_steps_in_window = 0
         
         if (episode + 1) % 50 == 0 or (episode + 1) == num_episodes:
             torch.save({

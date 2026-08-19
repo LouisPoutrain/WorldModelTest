@@ -1,5 +1,11 @@
 const modulesData = {
     'ENV': {
+        deep: `<ul>
+            <li><strong>Moteur Physique :</strong> Gère la grille réelle, l'énergie (batterie) et génère l'observation partielle (POV).</li>
+            <li><strong>In (PyTorch) :</strong> Action discrète a_t ∈ {0, 1, 2, 3} (Haut, Bas, Gauche, Droite).</li>
+            <li><strong>Out (PyTorch) :</strong> Vision x_t Tensor <code>[Batch=1, Channels=1, H=5, W=5]</code>, Énergie e_t (float), Reward r_t (float), Done (bool).</li>
+        </ul>`,
+
         icon: "🌍",
         title: "Environnement",
         subtitle: "Fichier : env/gridworld.py",
@@ -8,7 +14,14 @@ const modulesData = {
         input: "Action choisie a_t",
         output: "Image 5x5 (torch.Tensor)"
     },
-    'PERC': {
+        'PERC': {
+        deep: `<ul>
+            <li><strong>Dualité de l'Encodeur :</strong> JEPA exige DEUX encodeurs pour éviter l'effondrement (collapse). L'Encodeur Principal ($\theta$) est entraîné par gradient. L'Encodeur Cible ($\bar{\theta}$) est mis à jour par EMA : $\bar{\theta} = \tau\bar{\theta} + (1-\tau)\theta$.</li>
+            <li><strong>Dimensions Tenseur :</strong> In = <code>[B, 1, 5, 5]</code> ➔ Out = $s_t$ Tensor <code>[B, 128]</code>.</li>
+            <li><strong>Prévention du Collapse :</strong> Utilise SIGReg/VICReg pour forcer l'espace latent à être structuré. $\mathcal{L}_{V} = \max(0, 1 - \text{Var}(s_t))$.</li>
+        </ul>`,
+
+        math: "L_{SIGReg} = \\frac{1}{d} \\sum_{i} (\\text{Var}(z_i) - 1)^2 + \\lambda \\sum_{i \\neq j} \\text{Cov}(z_i, z_j)^2",
         icon: "👁️",
         title: "Perception",
         subtitle: "Fichier : modules/perception.py",
@@ -18,6 +31,13 @@ const modulesData = {
         output: "s_t (Vecteur de taille 32)"
     },
     'CONF': {
+        deep: `<ul>
+            <li><strong>Logique Opérationnelle :</strong> Cortex préfrontal agissant via des seuils.</li>
+            <li>Si <code>energy < seuil</code> : $s_{goal} \leftarrow \text{Enc}(x_{\text{recharge}})$, $w_{energy} = 1.0, w_{goal} = 0.5$.</li>
+            <li>Sinon : $s_{goal} \leftarrow \text{Enc}(x_{\text{cible}})$, $w_{energy} = 0.1, w_{goal} = 1.0$.</li>
+            <li><strong>Sorties :</strong> $s_{goal}$ <code>[1, 128]</code>, et tenseur de poids $w$.</li>
+        </ul>`,
+
         icon: "🧭",
         title: "Configurateur",
         subtitle: "Fichier : modules/configurator.py",
@@ -26,7 +46,20 @@ const modulesData = {
         input: "Énergie actuelle",
         output: "Cible (s_goal)"
     },
-    'WM': {
+        'WM': {
+        deep: `<ul>
+            <li><strong>L'Algorithme CEM (Model Predictive Control) :</strong>
+                <ol>
+                    <li>Initialiser $P(a) = \text{Uniform}(0, 1)$ sur horizon $H$ (ex: $H=5$).</li>
+                    <li>Boucle $M$ itérations : Échantillonner $N$ séquences (Shape: <code>[100, 5, 4]</code>).</li>
+                    <li>Simuler via World Model et évaluer le coût cumulé.</li>
+                    <li>Garder les $K$ séquences d'élite et mettre à jour $P(a)$.</li>
+                </ol>
+            </li>
+            <li><strong>Mode-2 de LeCun :</strong> Planification délibérative ("s'arrêter pour réfléchir").</li>
+        </ul>`,
+
+        math: "a^*_{t:t+H} = \\arg\\min_{a} \\sum_{\\tau=t}^{t+H} \\gamma^{\\tau-t} c(\\hat{s}_\\tau)",
         icon: "🎯",
         title: "Acteur (Planificateur)",
         subtitle: "Fichier : modules/actor.py",
@@ -35,7 +68,14 @@ const modulesData = {
         input: "s_t actuel",
         output: "Une action parfaite a_t"
     },
-    'SIM': {
+        'SIM': {
+        deep: `<ul>
+            <li><strong>Architecture Récurrente :</strong> Réseau (MLP/RNN) qui prédit les conséquences d'une action strictement dans l'espace latent : $\hat{s}_{t+1} = \text{Pred}_\phi(s_t, z_t, a_t)$.</li>
+            <li><strong>Perte d'Apprentissage (JEPA Loss) :</strong> La prédiction est comparée au véritable état encodé par l'Encodeur Cible $s'_{t+1}$, <em>jamais</em> aux pixels.</li>
+            <li>$\mathcal{L}_{WM} = \mathbb{E}[\Vert\hat{s}_{t+1} - s'_{t+1}\Vert_2^2]$</li>
+        </ul>`,
+
+        math: "L_{JEPA} = \\| \\hat{s}_{t+1} - s_{t+1} \\|_2^2",
         icon: "🧠",
         title: "Modèle du Monde (JEPA)",
         subtitle: "Fichier : modules/world_model.py",
@@ -44,7 +84,14 @@ const modulesData = {
         input: "s_t, action imaginée",
         output: "s_next (Avenir prédit)"
     },
-    'COST': {
+        'COST': {
+        deep: `<ul>
+            <li><strong>Coût Intrinsèque (Boussole) :</strong> $c_{intr} = \Vert \hat{s}_{t+1} - s_{goal} \Vert_2$.</li>
+            <li><strong>Le Critique (Value Function $V_{\psi}$) :</strong> Réseau MLP prédisant la douleur/plaisir à long terme. $c_{total} = w_{goal} \cdot c_{intr} + V_{\psi}(\hat{s}_{t+1})$.</li>
+            <li><strong>Apprentissage (TD-Learning) :</strong> $\mathcal{L}_{Critic} = (V_\psi(s_t) - (c_{intr\_reel} + \gamma V_\psi(s_{t+1})))^2$</li>
+        </ul>`,
+
+        math: "L_{critic} = \\| V(s_t) - (c_t + \\gamma V_{target}(s_{t+1})) \\|_2^2",
         icon: "⚖️",
         title: "Critique",
         subtitle: "Fichier : modules/cost.py",
@@ -54,6 +101,16 @@ const modulesData = {
         output: "Score / Coût scalaire"
     },
     'MEM': {
+        deep: `<ul>
+            <li><strong>Entraînement Asynchrone :</strong> Stocke les batchs extraits pour un entraînement hors ligne ou itératif.</li>
+            <li><strong>Dynamique Globale (Backprop) :</strong>
+                <br><code>opt_encoder.zero_grad()</code>
+                <br><code>loss_total = loss_jepa + lambda * loss_sigreg</code>
+                <br><code>loss_total.backward()</code>
+            </li>
+            <li>Déclenche la mise à jour EMA de l'Encodeur Cible.</li>
+        </ul>`,
+
         icon: "💾",
         title: "Replay Buffer",
         subtitle: "Fichier : modules/memory.py",

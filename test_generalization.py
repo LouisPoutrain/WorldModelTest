@@ -28,8 +28,6 @@ class CustomGridWorldEnv(GridWorldEnv):
         
         # Nouvelle configuration de labyrinthe (Un grand mur vertical avec un passage en bas)
         self.obstacles = []
-        for i in range(0, 8):
-            self.obstacles.append([i, 5])
             
         # Ajouter quelques obstacles aléatoires
         self.obstacles.extend([[8, 2], [7, 2], [2, 2], [2, 3], [2, 8], [3, 8], [4, 8]])
@@ -132,7 +130,7 @@ def main():
 
     anim = animation.FuncAnimation(fig, update, frames=len(frames), interval=200, blit=False)
     
-    video_path = "generalization_run.gif"
+    video_path = "media/generalization_run.gif"
     anim.save(video_path, writer='pillow', fps=5)
     print(f"Vidéo de généralisation sauvegardée dans : {video_path}")
 

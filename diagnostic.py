@@ -43,7 +43,7 @@ def main():
     world_model = WorldModel(latent_dim=latent_dim, action_dim=4, hidden_dim=128)
     cost = Cost(latent_dim=latent_dim)
     configurator = Configurator(latent_dim=latent_dim)
-    actor = Actor(action_dim=4, num_sequences=2000, horizon=15, cem_iterations=10, elite_size=100)
+    actor = Actor(action_dim=4, num_sequences=500, horizon=10, cem_iterations=10, elite_size=50)
     
     checkpoint_path = os.path.join("checkpoints", "agent_checkpoint.pth")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -157,13 +157,13 @@ def main():
         s_station = perception(station_obs)
         configurator.set_goals(s_target, s_station)
     
-    s_goal, _, _, _ = configurator.get_configuration(100)
+    s_goal, _, _, w_goal = configurator.get_configuration(100)
     dist_to_goal = torch.sum((latent_vectors["Agent"] - s_goal)**2).item()
     print(f"  Distance Agent -> Goal (latent): {dist_to_goal:.4f}")
     
     s_agent = latent_vectors["Agent"]
     h_agent = world_model.init_hidden(1, device=s_agent.device)
-    a, seq, cost_val = actor.plan(s_agent, h_agent, world_model, s_goal)
+    a, seq, cost_val = actor.plan(s_agent, h_agent, world_model, cost, s_goal, w_goal)
     seq_str = [action_names[s.item()] for s in seq[:8]]
     print(f"  Plan: {seq_str} (cost={cost_val:.4f})")
     
@@ -184,8 +184,8 @@ def main():
         x_t_tensor = x_t.unsqueeze(0)
         with torch.no_grad():
             s_t = perception(x_t_tensor)
-        s_goal, _, _, _ = configurator.get_configuration(env.energy)
-        a_t, _, _ = actor.plan(s_t, h_t, world_model, s_goal)
+        s_goal, _, _, w_goal = configurator.get_configuration(env.energy)
+        a_t, _, _ = actor.plan(s_t, h_t, world_model, cost, s_goal, w_goal)
         x_next, reward, done = env.step(a_t)
         
         a_t_onehot = F.one_hot(torch.tensor([a_t]), num_classes=4).float()

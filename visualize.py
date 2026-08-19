@@ -81,7 +81,7 @@ def main():
         s_goal, w_energy, w_collision, w_goal = configurator.get_configuration(env.energy)
         
         # Planification pure (distance au goal, pas de critique)
-        a_t, _, _ = actor.plan(s_t, h_t, world_model, s_goal)
+        a_t, _, _ = actor.plan(s_t, h_t, world_model, cost, s_goal, w_goal)
         
         action_names = ["Haut", "Bas", "Gauche", "Droite"]
         x_next, reward, done = env.step(a_t)
@@ -126,7 +126,7 @@ def main():
         
         anim = animation.FuncAnimation(fig, animate, frames=len(frames), interval=300, blit=False)
         
-        output_path = "agent_run.gif"
+        output_path = "media/agent_run.gif"
         anim.save(output_path, writer='pillow', fps=3)
         plt.close()
         print(f"  📹 Vidéo sauvegardée : {output_path}")

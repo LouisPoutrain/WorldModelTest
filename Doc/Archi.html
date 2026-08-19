@@ -7,6 +7,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+
+    <!-- KaTeX -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+
+    <!-- KaTeX Auto-Render -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
 </head>
 <body>
 
@@ -222,6 +231,18 @@
                         <p id="p-tech"></p>
                     </div>
 
+                    
+                    
+                    <div class="panel-section" id="p-deep-section" style="display: none;">
+                        <h3 class="section-heading">🔬 Deep Dive (PyTorch & Théorie)</h3>
+                        <div class="deep-box" id="p-deep"></div>
+                    </div>
+
+                    <div class="panel-section" id="p-math-section" style="display: none;">
+                        <h3 class="section-heading">📐 Équation Clé</h3>
+                        <div class="math-box" id="p-math"></div>
+                    </div>
+
                     <div class="panel-section io-grid">
                         <div class="io-box in-box">
                             <span class="io-label">ENTRÉE</span>
@@ -232,6 +253,76 @@
                             <span class="io-val" id="p-out"></span>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    <!-- ==================== RECAP SECTION ==================== -->
+    <section class="recap-section">
+        <h2 class="section-title">Récapitulatif des Modules</h2>
+        <p class="section-subtitle">Vue d'ensemble statique de l'architecture complète</p>
+
+        <div class="recap-grid">
+            <!-- ENV -->
+            <div class="recap-card">
+                <div class="rc-header"><span class="rc-icon">🌍</span><h3>Environnement</h3></div>
+                <div class="rc-content">
+                    <p><strong>Modèle :</strong> Procédural (Python)</p>
+                    <p><strong>Théorie :</strong> Processus de Décision Markovien (MDP)</p>
+                    <p><strong>But :</strong> Fournir un monde physique (Gridworld 10x10) avec murs et énergie.</p>
+                    <p><strong>Fonctionnement :</strong> Gère l'état caché et retourne une observation partielle 5x5 à l'agent.</p>
+                </div>
+            </div>
+            <!-- PERC -->
+            <div class="recap-card">
+                <div class="rc-header"><span class="rc-icon">👁️</span><h3>Perception</h3></div>
+                <div class="rc-content">
+                    <p><strong>Modèle :</strong> CNN (ResNet) / Encodeur Dual</p>
+                    <p><strong>Théorie :</strong> Extraction de features abstraites</p>
+                    <p><strong>But :</strong> Transformer les pixels bruts en Espace Latent sans effondrement.</p>
+                    <p><strong>Fonctionnement :</strong> Convertit l'image en vecteur `s_t`. Stabilisé par EMA (Target Encoder) et SIGReg.</p>
+                </div>
+            </div>
+            <!-- CONF -->
+            <div class="recap-card">
+                <div class="rc-header"><span class="rc-icon">🧭</span><h3>Configurateur</h3></div>
+                <div class="rc-content">
+                    <p><strong>Modèle :</strong> Heuristique à seuils</p>
+                    <p><strong>Théorie :</strong> Cortex Motivationnel</p>
+                    <p><strong>But :</strong> Déterminer la priorité immédiate de survie.</p>
+                    <p><strong>Fonctionnement :</strong> Alterne l'objectif (s_goal) entre la cible finale et la station de recharge en cas de batterie faible.</p>
+                </div>
+            </div>
+            <!-- WM / ACTOR -->
+            <div class="recap-card">
+                <div class="rc-header"><span class="rc-icon">🎯</span><h3>Acteur (CEM)</h3></div>
+                <div class="rc-content">
+                    <p><strong>Modèle :</strong> Model Predictive Control (MPC)</p>
+                    <p><strong>Théorie :</strong> Optimisation Cross-Entropy Method</p>
+                    <p><strong>But :</strong> Délibérer avant d'agir (Système 2).</p>
+                    <p><strong>Fonctionnement :</strong> Simule massivement des trajectoires dans le World Model et affine la distribution d'actions idéale.</p>
+                </div>
+            </div>
+            <!-- SIM / JEPA -->
+            <div class="recap-card">
+                <div class="rc-header"><span class="rc-icon">🧠</span><h3>Modèle du Monde</h3></div>
+                <div class="rc-content">
+                    <p><strong>Modèle :</strong> Réseau Neuronal (MLP séquentiel)</p>
+                    <p><strong>Théorie :</strong> Simulateur cognitif de transition JEPA</p>
+                    <p><strong>But :</strong> Imaginer les conséquences d'une action.</p>
+                    <p><strong>Fonctionnement :</strong> Prédit le futur latent en minimisant la distance L2 avec l'encodage réel de la future image.</p>
+                </div>
+            </div>
+            <!-- COST -->
+            <div class="recap-card">
+                <div class="rc-header"><span class="rc-icon">⚖️</span><h3>Critique</h3></div>
+                <div class="rc-content">
+                    <p><strong>Modèle :</strong> Réseau Neuronal + Distance L2</p>
+                    <p><strong>Théorie :</strong> Fonction de Valeur TD-Learning</p>
+                    <p><strong>But :</strong> Évaluer le danger et l'utilité d'un chemin.</p>
+                    <p><strong>Fonctionnement :</strong> Combine la Boussole (distance à l'objectif) et la mémoire de la douleur pour noter les futurs imaginés.</p>
                 </div>
             </div>
         </div>
@@ -289,6 +380,75 @@
     </section>
 
     <!-- ==================== FOOTER ==================== -->
+    
+    <!-- ==================== GLOSSARY SECTION ==================== -->
+    <section class="glossary-section">
+        <h2 class="section-title">📖 Glossaire Technique Avancé</h2>
+        <p class="section-subtitle">Définitions approfondies des concepts clés de l'Intelligence Autonome (LeCun, 2022-2025)</p>
+
+        <div class="glossary-grid">
+            <div class="glossary-item">
+                <h4>JEPA</h4>
+                <p><em>Joint-Embedding Predictive Architecture.</em> Architecture d'apprentissage auto-supervisé introduite par Yann LeCun. Contrairement aux modèles génératifs (LLM, Auto-encodeurs) qui tentent de reconstruire chaque pixel ou token, JEPA utilise un encodeur pour projeter la réalité dans un espace abstrait et tente de prédire uniquement l'<strong>état latent futur</strong>. Cela permet d'ignorer les détails imprévisibles de l'environnement (le bruit) et de réduire drastiquement la complexité calculatoire.</p>
+            </div>
+            
+            <div class="glossary-item">
+                <h4>Espace Latent (Latent Space)</h4>
+                <p>Représentation mathématique compressée (un vecteur de nombres, ex: $s_t \in \mathbb{R}^{128}$) générée par l'encodeur (Perception). Un espace latent bien structuré préserve la topologie de l'environnement réel : deux situations physiquement similaires auront des vecteurs proches. C'est dans cet espace de basse dimension que le <em>World Model</em> effectue toutes ses prédictions.</p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>Latent Collapse (Effondrement Latent)</h4>
+                <p>Le problème majeur des architectures conjointes (Siamese Networks). Sans précaution, le réseau trouve une solution de facilité : projeter n'importe quelle image vers un vecteur constant (ex: des zéros). La perte (Loss) tombe à zéro, mais l'agent devient aveugle. Des techniques comme l'EMA ou SIGReg/VICReg sont obligatoires pour forcer l'encodeur à maintenir une variance (diversité) dans l'espace latent.</p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>Système de Décision : Mode-1 vs Mode-2</h4>
+                <p>Concept tiré des neurosciences et formalisé par LeCun. Le <strong>Mode-1</strong> est réactif et instinctif : l'agent perçoit et agit instantanément via une politique (Policy) directe. Le <strong>Mode-2</strong> est délibératif : l'agent "s'arrête pour réfléchir", utilise son <em>World Model</em> pour simuler mentalement des futurs possibles, évalue les coûts de chaque trajectoire, et planifie son action. Votre agent opère en Mode-2.</p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>CEM</h4>
+                <p><em>Cross-Entropy Method.</em> Puissant algorithme d'optimisation sans dérivée utilisé par l'Acteur lors de la planification (Mode-2). Le CEM génère des séquences d'actions aléatoires selon une distribution de probabilité, simule ces séquences, isole les $K$ meilleures (les "élites") selon le Critique, et met à jour sa distribution pour se concentrer sur ces trajectoires prometteuses à l'itération suivante.</p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>MPC</h4>
+                <p><em>Model Predictive Control (Contrôle Prédictif à Horizon Fuyant).</em> Stratégie d'exécution où l'agent calcule un plan optimal sur un horizon de $H$ étapes futures, mais n'exécute <strong>que la toute première action</strong> $a_0$. Au pas de temps suivant, il perçoit la nouvelle réalité et recalcule un nouveau plan complet. Cela permet à l'agent de corriger ses erreurs de prédiction et de s'adapter aux imprévus.</p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>TD-Learning & Réseau Critique</h4>
+                <p><em>Temporal Difference Learning.</em> Méthode d'apprentissage au cœur du module "Coût". Le Critique est un réseau de neurones ($V_\psi$) qui apprend à prédire la somme des récompenses/coûts futurs. Il se met à jour en comparant sa prédiction à l'instant $t$ avec la récompense réelle obtenue plus sa propre prédiction à l'instant $t+1$ (Équation de Bellman). Cela donne à l'agent une "intuition" du danger à long terme, lui permettant de s'éloigner temporairement de sa cible pour contourner un mur.</p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>Configurateur</h4>
+                <p>Le module de supervision ("Cortex Préfrontal") de l'architecture de LeCun. Il ne prend pas d'actions physiques, mais module les objectifs de l'Acteur en fonction de l'état interne de l'agent. Par exemple, si l'énergie chute sous un seuil critique, le Configurateur modifie les poids $w$ de la fonction de coût pour que la survie (recharge) prenne le pas sur l'objectif principal.</p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>EMA / Target Encoder</h4>
+                <p><em>Exponential Moving Average.</em> Méthode essentielle de stabilisation. Au lieu de comparer la prédiction du World Model à un encodeur qui change constamment, on utilise un réseau "Cible" dont les poids ($\bar{\theta}$) sont une moyenne glissante très lente des poids du réseau principal ($\theta$). Formule : $\bar{\theta} \leftarrow \tau\bar{\theta} + (1-\tau)\theta$ (avec $\tau \approx 0.99$).</p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>SIGReg / VICReg</h4>
+                <p><em>Sketched Isotropic Gaussian / Variance-Invariance-Covariance Regularization.</em> Fonctions de perte (Loss) additionnelles. Elles forcent les neurones de l'espace latent à maintenir une variance minimale (pas de <em>Collapse</em>) et à décorréler leurs activations (Covariance nulle), assurant que chaque dimension du vecteur latent code une information unique et utile sur l'environnement.</p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>EBM</h4>
+                <p><em>Energy-Based Model (Modèle Basé sur l'Énergie).</em> Cadre théorique unificateur de Yann LeCun. L'apprentissage ne consiste plus à maximiser une probabilité, mais à modeler une surface d'énergie spatiale : on creuse des "vallées" (énergie faible) pour les paires $(état, prédiction)$ compatibles et réalistes, et on crée des "montagnes" (énergie haute) pour les situations incohérentes.</p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>Replay Buffer</h4>
+                <p>Base de données épisodique agissant comme l'hippocampe de l'agent. Elle stocke les transitions passées $(s_t, a_t, r_t, s_{t+1})$. Pendant l'entraînement, on échantillonne des batchs aléatoires depuis ce buffer. Cela brise la corrélation temporelle des données successives et permet d'entraîner le World Model et le Critique de manière stable ("Off-Policy").</p>
+            </div>
+        </div>
+    </section>
+
     <footer>
         <p>Projet d'Intelligence Artificielle Autonome (Deep-JEPA) - 2026</p>
     </footer>

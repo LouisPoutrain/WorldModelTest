@@ -103,16 +103,23 @@ def setup_id(env):
 
 def main():
     print("🧪 Évaluation 3 : Comportement (In-Distribution vs OOD)")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     
     perception = Perception(in_channels=4, latent_dim=32).to(device)
     configurator = Configurator(latent_dim=32)
     world_model = WorldModel(latent_dim=32, action_dim=4, hidden_dim=128).to(device)
     cost = Cost(latent_dim=32).to(device)
-    actor = Actor(action_dim=4, num_sequences=500, horizon=10, cem_iterations=10, elite_size=50)
+    actor = Actor(action_dim=4, num_sequences=500, horizon=15, cem_iterations=10, elite_size=50, w_critic=0.1)
     
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    checkpoint_path = os.path.join(base_dir, "checkpoints", "agent_critic_nstep.pth")
+    
+    # Choix du checkpoint : argument CLI ou défaut
+    import sys as _sys
+    if len(_sys.argv) > 1:
+        checkpoint_path = _sys.argv[1]
+    else:
+        checkpoint_path = os.path.join(base_dir, "checkpoints", "agent_critic_nstep.pth")
+    print(f"📦 Checkpoint : {checkpoint_path}")
     
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path, map_location=device)

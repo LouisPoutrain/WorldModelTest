@@ -14,7 +14,7 @@ from modules.world_model import WorldModel
 
 def main():
     print("🧪 Évaluation 2 : Dynamiques (Rollout Drift)")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     
     # 1. Charger les modèles
     perception = Perception(in_channels=4, latent_dim=32).to(device)

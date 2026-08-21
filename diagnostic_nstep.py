@@ -45,7 +45,7 @@ def main():
     configurator = Configurator(latent_dim=latent_dim)
     actor = Actor(action_dim=4, num_sequences=500, horizon=10, cem_iterations=10, elite_size=50)
     
-    checkpoint_path = os.path.join("checkpoints", "agent_checkpoint.pth")
+    checkpoint_path = os.path.join("checkpoints", "agent_critic_nstep.pth")
     device = torch.device("cpu")
     if not os.path.exists(checkpoint_path):
         print("❌ Aucun checkpoint trouvé!")

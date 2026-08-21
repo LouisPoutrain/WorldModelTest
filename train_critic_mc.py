@@ -50,14 +50,13 @@ class MixedGridWorldEnv(GridWorldEnv):
                 self.obstacles.append([8, j])
         else:
             # Random ID grid (déjà fait par super().reset())
-            # On s'assure juste que c'est propre
             pass
             
         self.done = False
         return self.get_local_observation()
 
 def main():
-    print("🚀 Démarrage de l'entraînement isolé du Critique (N-Step TD)")
+    print("🚀 Entraînement du Critique par Monte Carlo Returns (pas de bootstrap)")
     device = torch.device("cpu")
     
     # 1. Initialiser
@@ -67,17 +66,15 @@ def main():
     cost = Cost(latent_dim=latent_dim).to(device)
     
     configurator = Configurator(latent_dim=latent_dim)
-    # Actor utilisant les paramètres de base stables
     actor = Actor(action_dim=4, num_sequences=500, horizon=10, cem_iterations=10, elite_size=50)
     
-    # 2. Charger les poids
+    # 2. Charger les poids (Perception + WorldModel seulement)
     checkpoint_path = "checkpoints/agent_checkpoint.pth"
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path, map_location=device)
         perception.load_state_dict(checkpoint['perception'])
         world_model.load_state_dict(checkpoint['world_model'])
-        # cost.load_state_dict(checkpoint['cost']) # COMMENTÉ : Le critique doit réapprendre de zéro !
-        print("✅ Modèles de base chargés.")
+        print("✅ Perception + WorldModel chargés (Critique part de zéro).")
     else:
         print("❌ Aucun checkpoint trouvé.")
         return
@@ -92,46 +89,46 @@ def main():
     world_model.eval()
     cost.train()
     
-    # Target Cost pour stabiliser le TD-Learning
-    target_cost = copy.deepcopy(cost).to(device)
-    target_cost.eval()
-    for param in target_cost.parameters():
-        param.requires_grad = False
-        
-    optimizer = torch.optim.Adam(cost.parameters(), lr=1e-3)
-    memory = ShortTermMemory(capacity=50000)
+    optimizer = torch.optim.Adam(cost.parameters(), lr=3e-4)
     env = MixedGridWorldEnv(size=10, max_energy=100)
     
     # Hyperparamètres
-    num_episodes = 5000
-    batch_size = 128
+    num_episodes = 10000
     gamma = 0.90
-    epsilon = 0.5  # 50% aléatoire pour forcer l'exploration des pièges
-    seq_len = 3    # N-Step TD avec N=3
-    tau = 0.005    # Soft update lent (on part de zéro)
+    epsilon = 0.5  # 50% aléatoire pour explorer les pièges
     
-    total_steps = 0
     losses = []
+    successes = 0
     
-    pbar = tqdm(range(num_episodes), desc="Entraînement Critique")
+    # Replay buffer pour stocker des (s_t, G_t) pré-calculés
+    mc_buffer = []
+    mc_buffer_capacity = 200000
+    batch_size = 256
+    updates_per_episode = 4
+    
+    pbar = tqdm(range(num_episodes), desc="Entraînement MC")
     for ep in pbar:
         obs = env.reset()
-        x_t = obs
         h_t = world_model.init_hidden(1, device=device)
         
-        # Set goals pour le configurator
+        # Set goals
         target_obs = create_synthetic_target_obs(env, 'target').unsqueeze(0).to(device)
         station_obs = create_synthetic_target_obs(env, 'station').unsqueeze(0).to(device)
         with torch.no_grad():
             s_target = perception(target_obs)
             s_station = perception(station_obs)
             configurator.set_goals(s_target, s_station)
-            
+        
+        # Collecter une trajectoire complète
+        episode_states = []  # Les états latents
+        episode_costs = []   # Les coûts instantanés (-reward)
+        
         for step in range(100):
-            x_t_tensor = x_t.unsqueeze(0).to(device)
+            obs_tensor = obs.unsqueeze(0).to(device)
             with torch.no_grad():
-                s_t = perception(x_t_tensor)
-                
+                s_t = perception(obs_tensor)
+                episode_states.append(s_t.cpu())
+            
             s_goal, w_energy, w_collision, w_goal = configurator.get_configuration(env.energy)
             
             # Epsilon-Greedy CEM
@@ -139,111 +136,110 @@ def main():
                 a_t = random.randint(0, 3)
             else:
                 a_t, _, _ = actor.plan(s_t, h_t, world_model, cost, s_goal, w_goal)
-                
-            x_next, reward, done = env.step(a_t)
             
-            # Mise à jour du hidden state pour le prochain plan
+            obs, reward, done = env.step(a_t)
+            
+            # Coût instantané = négatif de la récompense (le CEM minimise)
+            # Récompenses shapées pour créer des montagnes d'énergie
+            if reward == -5.0:
+                instant_cost = 20.0
+            elif reward == 100.0:
+                instant_cost = -50.0
+            elif reward == 10.0:
+                instant_cost = -5.0
+            else:
+                instant_cost = -float(reward)
+            episode_costs.append(instant_cost)
+            
+            # Update hidden state
             a_t_onehot = F.one_hot(torch.tensor([a_t]), num_classes=4).float().to(device)
             with torch.no_grad():
                 _, h_t = world_model.forward_step(s_t, a_t_onehot, h_t)
-                
-            # Clipper les rewards pour stabiliser le TD-Learning
-            clipped_reward = max(min(float(reward), 10.0), -5.0)
             
-            # Stockage
-            memory.push(x_t_tensor, a_t, x_next.unsqueeze(0), clipped_reward, done)
-            x_t = x_next
-            total_steps += 1
-            
-            # Entraînement
-            if len(memory) > batch_size * seq_len:
-                # N-Step TD Learning (N=3)
-                try:
-                    x_0, a_seq, x_next_seq, r_seq, d_seq = memory.sample_sequences(batch_size, seq_len=seq_len)
-                except ValueError:
-                    continue # Pas assez de séquences valides
-                    
-                x_0 = x_0.to(device)
-                x_next_seq = x_next_seq.to(device)
-                r_seq = r_seq.to(device)
-                d_seq = d_seq.to(device)
+            if done:
+                if env.agent_pos == env.target_pos:
+                    successes += 1
+                break
+        
+        # ===== MONTE CARLO : Calculer les retours G_t en remontant le temps =====
+        T = len(episode_costs)
+        returns = [0.0] * T
+        G = 0.0
+        for t in reversed(range(T)):
+            G = episode_costs[t] + gamma * G
+            returns[t] = G
+        
+        # Stocker dans le buffer MC
+        for t in range(T):
+            mc_buffer.append((episode_states[t], returns[t]))
+        
+        # Garder le buffer à taille raisonnable
+        if len(mc_buffer) > mc_buffer_capacity:
+            mc_buffer = mc_buffer[-mc_buffer_capacity:]
+        
+        # ===== Entraîner le Critique sur le buffer MC =====
+        if len(mc_buffer) >= batch_size:
+            ep_losses = []
+            for _ in range(updates_per_episode):
+                batch = random.sample(mc_buffer, batch_size)
+                s_batch = torch.cat([b[0] for b in batch], dim=0).to(device)  # (B, 32)
+                g_batch = torch.tensor([b[1] for b in batch], dtype=torch.float32).to(device)  # (B,)
                 
-                with torch.no_grad():
-                    s_0 = perception(x_0)
-                    
-                    # Calcul de la cible N-step
-                    # INVERSION DES REWARDS : Le planificateur minimise le Critic, 
-                    # donc le Critic doit apprendre le COÛT (négatif de la récompense)
-                    target_value = -r_seq[:, 0]
-                    discount = gamma
-                    
-                    for i in range(1, seq_len):
-                        not_done_prev = (1.0 - d_seq[:, i-1])
-                        target_value += discount * (-r_seq[:, i]) * not_done_prev
-                        discount *= gamma
-                        
-                    not_done_last = (1.0 - d_seq[:, seq_len-1])
-                    # État à t+3
-                    s_next_n = perception(x_next_seq[:, seq_len-1])
-                    v_next = target_cost(s_next_n).squeeze(1)
-                    
-                    target_value += discount * v_next * not_done_last
-                    
-                # Forward Critique
-                v_0 = cost(s_0).squeeze(1)
+                v_pred = cost(s_batch).squeeze(1)  # (B,)
+                loss = F.mse_loss(v_pred, g_batch)
                 
-                loss = F.mse_loss(v_0, target_value)
                 optimizer.zero_grad()
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(cost.parameters(), 1.0)
                 optimizer.step()
                 
-                losses.append(loss.item())
-                
-                # Soft update Target Cost
-                for target_param, param in zip(target_cost.parameters(), cost.parameters()):
-                    target_param.data.copy_(tau * param.data + (1.0 - tau) * target_param.data)
-                    
-            if done:
-                break
-                
-        # Logging temps réel
-        if len(losses) > 0:
-            pbar.set_postfix(loss=f"{np.mean(losses[-100:]):.4f}")
+                ep_losses.append(loss.item())
             
+            losses.append(np.mean(ep_losses))
+        
+        # Logging
+        if len(losses) > 0:
+            recent_loss = np.mean(losses[-100:])
+            sr = successes / (ep + 1) * 100
+            pbar.set_postfix(loss=f"{recent_loss:.2f}", sr=f"{sr:.0f}%", buf=f"{len(mc_buffer)//1000}k")
+    
     # Sauvegarde
-    save_path = "checkpoints/agent_critic_nstep.pth"
+    save_path = "checkpoints/agent_critic_mc.pth"
     torch.save({
         'perception': perception.state_dict(),
         'world_model': world_model.state_dict(),
         'cost': cost.state_dict()
     }, save_path)
     
-    # Génération du graphique de la Loss
+    # Graphique
+    import matplotlib
+    matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(12, 5))
     
-    # Lisser la courbe
-    def smooth(scalars, weight=0.9):
+    def smooth(scalars, weight=0.95):
         last = scalars[0]
         smoothed = []
         for point in scalars:
-            smoothed_val = last * weight + (1 - weight) * point
-            smoothed.append(smoothed_val)
-            last = smoothed_val
+            s = last * weight + (1 - weight) * point
+            smoothed.append(s)
+            last = s
         return smoothed
-        
+    
     if len(losses) > 0:
+        plt.subplot(1, 1, 1)
         plt.plot(smooth(losses), color="#8b5cf6", linewidth=2)
-        plt.title("Évolution de la Loss du Critique (N-Step TD)")
-        plt.xlabel("Mises à jour (Steps)")
-        plt.ylabel("Erreur MSE")
+        plt.title("Loss du Critique (Monte Carlo Returns)")
+        plt.xlabel("Épisodes")
+        plt.ylabel("MSE")
         plt.grid(True, linestyle="--", alpha=0.6)
-        
-        os.makedirs("media", exist_ok=True)
-        plt.savefig("media/critic_loss.png", dpi=300)
-        print("📈 Graphique de la Loss sauvegardé dans media/critic_loss.png")
-
-    print(f"🎉 Entraînement terminé ! Checkpoint sauvegardé dans {save_path}")
+        plt.yscale('log')
+    
+    os.makedirs("media", exist_ok=True)
+    plt.savefig("media/critic_mc_loss.png", dpi=300, bbox_inches='tight')
+    print(f"\n📈 Graphique sauvegardé dans media/critic_mc_loss.png")
+    print(f"🎉 Entraînement terminé ! Checkpoint : {save_path}")
+    print(f"📊 Taux de succès final (exploration ε=0.5) : {successes/num_episodes*100:.1f}%")
 
 if __name__ == "__main__":
     main()

@@ -15,7 +15,7 @@ from modules.perception import Perception
 
 def main():
     print("🧪 Évaluation 1 : Perception (Linear Probing)")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     
     # 1. Charger le modèle
     perception = Perception(in_channels=4, latent_dim=32).to(device)

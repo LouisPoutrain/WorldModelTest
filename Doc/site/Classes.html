@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep-JEPA — Diagramme de Classes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        /* ===== PAGE LAYOUT ===== */
+        .page-wrap {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px 20px 60px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 30px;
+            align-items: start;
+        }
+
+        /* ===== SVG PANEL ===== */
+        .svg-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .svg-panel svg { width: 100%; height: auto; display: block; }
+
+        /* UML classes */
+        .uml-class { cursor: pointer; transition: filter 0.3s, transform 0.2s; }
+        .uml-class:hover { filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.4)); }
+        .uml-class.active { filter: drop-shadow(0 0 22px rgba(56, 189, 248, 0.7)); }
+
+        .uml-header { font-size: 16px; font-weight: 700; fill: #fff; font-family: 'Inter', sans-serif; }
+        .uml-stereo { font-size: 11px; fill: rgba(255,255,255,0.45); font-family: 'JetBrains Mono', monospace; font-style: italic; }
+        .uml-attr { font-size: 11.5px; fill: #94a3b8; font-family: 'JetBrains Mono', monospace; }
+        .uml-meth { font-size: 11.5px; fill: #38bdf8; font-family: 'JetBrains Mono', monospace; }
+        .uml-sep { stroke: rgba(255,255,255,0.12); stroke-width: 1; }
+
+        /* Relation lines */
+        .rel { stroke: #334155; stroke-width: 1.5; fill: none; }
+        .rel-dash { stroke-dasharray: 6,4; }
+        .rel-lbl { font-size: 10px; fill: #64748b; font-family: 'JetBrains Mono', monospace; }
+        .rel-lbl-bg { fill: #0f172a; opacity: 0.85; }
+
+        /* Legend */
+        .legend-bar {
+            display: flex; gap: 22px; justify-content: center; flex-wrap: wrap;
+            margin-top: 18px; padding-top: 15px; border-top: 1px solid var(--card-border);
+        }
+        .leg { display: flex; align-items: center; gap: 7px; font-size: 0.82rem; color: #94a3b8; }
+        .leg-dot { width: 14px; height: 14px; border-radius: 3px; border: 2px solid; }
+
+        /* ===== DETAIL PANEL ===== */
+        .detail-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        /* Scrollbar */
+        .detail-panel::-webkit-scrollbar { width: 6px; }
+        .detail-panel::-webkit-scrollbar-track { background: transparent; }
+        .detail-panel::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+        .panel-placeholder {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 600px; padding: 40px; text-align: center; color: var(--text-muted);
+        }
+        .panel-placeholder .bounce { font-size: 4rem; margin-bottom: 20px; animation: bx 2s infinite; }
+        @keyframes bx { 0%,100%{transform:translateX(0)} 50%{transform:translateX(-12px)} }
+        .panel-placeholder h3 { font-size: 1.35rem; color: #fff; margin-bottom: 10px; }
+
+        /* Detail cards */
+        .dc { display: none; animation: fadeUp 0.35s ease; }
+        .dc.show { display: block; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+        .dc-head {
+            display: flex; align-items: center; gap: 15px;
+            padding: 22px 25px; border-bottom: 1px solid var(--card-border);
+            background: rgba(0,0,0,0.25);
+        }
+        .dc-icon { font-size: 1.8rem; background: rgba(255,255,255,0.08); padding: 10px; border-radius: 12px; }
+        .dc-head h2 { font-size: 1.4rem; color: #fff; margin: 0; }
+        .dc-head .fp { color: var(--primary); font-size: 0.82rem; font-family: 'JetBrains Mono', monospace; display: block; margin-top: 2px; }
+
+        .dc-sec { padding: 18px 25px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .dc-sec:last-child { border-bottom: none; }
+        .dc-sec h4 {
+            font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 1.2px; margin-bottom: 10px; font-weight: 600;
+        }
+        .dc-sec p { color: #cbd5e1; font-size: 0.92rem; line-height: 1.6; margin: 0 0 8px; }
+        .dc-sec p:last-child { margin-bottom: 0; }
+        .dc-sec p strong { color: #38bdf8; }
+        .dc-sec p code { background: rgba(0,0,0,0.35); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono',monospace; color: #38bdf8; font-size: 0.85em; }
+
+        .sig {
+            background: #0f172a; border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px; padding: 10px 14px; margin: 6px 0 10px;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+            color: #38bdf8; overflow-x: auto; white-space: pre; line-height: 1.5;
+        }
+        .sig .kw { color: #c084fc; }
+        .sig .pm { color: #94a3b8; }
+        .sig .tp { color: #fbbf24; }
+        .sig .rt { color: #34d399; }
+        .sig .cm { color: #475569; font-style: italic; }
+
+        /* Attribute list */
+        .attr-list { list-style: none; padding: 0; margin: 0; }
+        .attr-list li {
+            display: flex; gap: 10px; padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-size: 0.88rem; line-height: 1.5;
+        }
+        .attr-list li:last-child { border-bottom: none; }
+        .attr-name { color: #38bdf8; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; min-width: 110px; flex-shrink: 0; }
+        .attr-desc { color: #94a3b8; }
+        .attr-type { color: #fbbf24; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+
+        /* Nav bar */
+        .nav-bar {
+            display: flex; justify-content: center; gap: 18px;
+            padding: 14px 20px; border-bottom: 1px solid var(--card-border);
+            background: rgba(0,0,0,0.3);
+        }
+        .nav-bar a {
+            color: var(--text-muted); text-decoration: none; font-size: 0.92rem;
+            padding: 8px 18px; border-radius: 8px; transition: all 0.2s;
+            font-family: 'Inter', sans-serif; font-weight: 500;
+        }
+        .nav-bar a:hover { background: rgba(56, 189, 248, 0.1); color: var(--primary); }
+        .nav-bar a.active { background: rgba(56, 189, 248, 0.15); color: var(--primary); border: 1px solid rgba(56, 189, 248, 0.3); }
+    </style>
+</head>
+<body>
+
+    <nav class="nav-bar">
+        <a href="Archi.html">🧠 Architecture Interactive</a>
+        <a href="Classes.html" class="active">📐 Diagramme de Classes</a>
+    </nav>
+
+    <header class="hero" style="padding: 35px 20px 25px;">
+        <div class="hero-glow"></div>
+        <div class="hero-content">
+            <span class="hero-badge">📐 UML — Unified Modeling Language</span>
+            <h1>Diagramme de Classes</h1>
+            <p class="hero-subtitle">
+                Vue technique des classes Python et de leurs relations.<br>
+                Cliquez sur une classe pour explorer ses <strong>attributs</strong>, <strong>méthodes</strong> et <strong>signatures</strong>.
+            </p>
+        </div>
+    </header>
+
+    <section class="page-wrap">
+        <div class="main-layout">
+
+            <!-- ========== SVG DIAGRAM ========== -->
+            <div class="svg-panel">
+                <svg viewBox="0 0 1100 900" id="class-svg" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <pattern id="g" width="25" height="25" patternUnits="userSpaceOnUse">
+                            <path d="M 25 0 L 0 0 0 25" fill="none" stroke="#1e293b" stroke-width="0.5" opacity="0.4"/>
+                        </pattern>
+                        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
+                        </marker>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#g)" rx="12"/>
+
+                    <!-- ===== RELATIONS (behind boxes) ===== -->
+
+                    <!-- GridWorldEnv → Perception -->
+                    <path d="M 185 210 L 185 290" class="rel rel-dash" marker-end="url(#arr)"/>
+                    <rect x="130" y="240" width="110" height="16" rx="3" class="rel-lbl-bg"/>
+                    <text x="185" y="252" text-anchor="middle" class="rel-lbl">obs (4,10,10)</text>
+
+                    <!-- Perception → WorldModel -->
+                    <path d="M 340 410 L 430 410" class="rel" marker-end="url(#arr)"/>
+                    <rect x="350" y="395" width="72" height="16" rx="3" class="rel-lbl-bg"/>
+                    <text x="386" y="407" text-anchor="middle" class="rel-lbl">s_t (B,32)</text>
+
+                    <!-- Perception → Cost -->
+                    <path d="M 185 520 L 185 590" class="rel" marker-end="url(#arr)"/>
+                    <rect x="160" y="548" width="48" height="16" rx="3" class="rel-lbl-bg"/>
+                    <text x="185" y="560" text-anchor="middle" class="rel-lbl">s_t</text>
+
+                    <!-- WorldModel → Actor -->
+                    <path d="M 680 380 L 780 310" class="rel" marker-end="url(#arr)"/>
+                    <rect x="690" y="330" width="90" height="16" rx="3" class="rel-lbl-bg"/>
+                    <text x="735" y="342" text-anchor="middle" class="rel-lbl">s_sim, h_sim</text>
+
+                    <!-- Cost → Actor -->
+                    <path d="M 340 660 Q 550 500 780 330" class="rel" marker-end="url(#arr)"/>
+                    <rect x="520" y="478" width="40" height="16" rx="3" class="rel-lbl-bg"/>
+                    <text x="540" y="490" text-anchor="middle" class="rel-lbl">V(s)</text>
+
+                    <!-- Configurator → Actor -->
+                    <path d="M 920 610 L 920 440" class="rel" marker-end="url(#arr)"/>
+                    <rect x="870" y="520" width="100" height="16" rx="3" class="rel-lbl-bg"/>
+                    <text x="920" y="532" text-anchor="middle" class="rel-lbl">s_goal, w_goal</text>
+
+                    <!-- Actor → GridWorldEnv -->
+                    <path d="M 810 180 Q 540 50 310 110" class="rel rel-dash" marker-end="url(#arr)"/>
+                    <rect x="510" y="60" width="80" height="16" rx="3" class="rel-lbl-bg"/>
+                    <text x="550" y="72" text-anchor="middle" class="rel-lbl">action a_t</text>
+
+                    <!-- ShortTermMemory → WorldModel (data feed) -->
+                    <path d="M 580 680 L 580 540" class="rel rel-dash" marker-end="url(#arr)"/>
+                    <rect x="530" y="608" width="100" height="16" rx="3" class="rel-lbl-bg"/>
+                    <text x="580" y="620" text-anchor="middle" class="rel-lbl">sequences BPTT</text>
+
+                    <!-- SIGReg ··· Perception -->
+                    <path d="M 120 575 L 90 540" class="rel" stroke-dasharray="3,3" stroke="#a78bfa" stroke-width="1"/>
+
+                    <!-- ===== CLASS BOXES ===== -->
+
+                    <!-- 1. GridWorldEnv -->
+                    <g class="uml-class" data-id="gridworld" transform="translate(40, 80)">
+                        <rect width="290" height="130" rx="10" fill="#0c4a6e" stroke="#0ea5e9" stroke-width="2"/>
+                        <text x="145" y="22" text-anchor="middle" class="uml-stereo">«environment»</text>
+                        <text x="145" y="42" text-anchor="middle" class="uml-header">GridWorldEnv</text>
+                        <line x1="12" y1="52" x2="278" y2="52" class="uml-sep"/>
+                        <text x="16" y="70" class="uml-attr">- size: int = 10</text>
+                        <text x="16" y="86" class="uml-attr">- max_energy: int = 100</text>
+                        <line x1="12" y1="95" x2="278" y2="95" class="uml-sep"/>
+                        <text x="16" y="112" class="uml-meth">+ reset() → obs</text>
+                        <text x="16" y="127" class="uml-meth">+ step(action) → (obs, r, done)</text>
+                    </g>
+
+                    <!-- 2. Perception -->
+                    <g class="uml-class" data-id="perception" transform="translate(40, 300)">
+                        <rect width="290" height="220" rx="10" fill="#78350f" stroke="#f59e0b" stroke-width="2"/>
+                        <text x="145" y="22" text-anchor="middle" class="uml-stereo">«nn.Module»</text>
+                        <text x="145" y="42" text-anchor="middle" class="uml-header">Perception</text>
+                        <line x1="12" y1="52" x2="278" y2="52" class="uml-sep"/>
+                        <text x="16" y="70" class="uml-attr">- encoder: nn.Sequential</text>
+                        <text x="16" y="86" class="uml-attr" style="fill:#64748b">  Conv2d(4→32) + 2×ResBlock(32)</text>
+                        <text x="16" y="102" class="uml-attr" style="fill:#64748b">  Conv2d(32→64, s=2) + 2×ResBlock</text>
+                        <text x="16" y="118" class="uml-attr" style="fill:#64748b">  Flatten → Lin(1600,128,32)</text>
+                        <line x1="12" y1="128" x2="278" y2="128" class="uml-sep"/>
+                        <text x="16" y="146" class="uml-meth">+ __init__(in_channels=4,</text>
+                        <text x="16" y="162" class="uml-meth">           latent_dim=32)</text>
+                        <text x="16" y="182" class="uml-meth">+ forward(x) → s_t</text>
+                        <text x="30" y="198" class="uml-attr" style="fill:#475569">x:(B,4,10,10) → s_t:(B,32)</text>
+                        <text x="30" y="214" class="uml-attr" style="fill:#475569">Pas de BatchNorm (→ SIGReg)</text>
+                    </g>
+
+                    <!-- 3. Cost -->
+                    <g class="uml-class" data-id="cost" transform="translate(40, 590)">
+                        <rect width="290" height="150" rx="10" fill="#4c1d95" stroke="#8b5cf6" stroke-width="2"/>
+                        <text x="145" y="22" text-anchor="middle" class="uml-stereo">«nn.Module — Critique»</text>
+                        <text x="145" y="42" text-anchor="middle" class="uml-header">Cost</text>
+                        <line x1="12" y1="52" x2="278" y2="52" class="uml-sep"/>
+                        <text x="16" y="70" class="uml-attr">- critic: nn.Sequential</text>
+                        <text x="16" y="86" class="uml-attr" style="fill:#64748b">  Lin(32,32)→ReLU→Lin(32,1)</text>
+                        <line x1="12" y1="96" x2="278" y2="96" class="uml-sep"/>
+                        <text x="16" y="114" class="uml-meth">+ __init__(latent_dim=32)</text>
+                        <text x="16" y="132" class="uml-meth">+ forward(s_t) → V(s_t)</text>
+                        <text x="30" y="146" class="uml-attr" style="fill:#475569">V bas = bon état</text>
+                    </g>
+
+                    <!-- SIGReg (petit, lié à Perception) -->
+                    <g class="uml-class" data-id="sigreg" transform="translate(40, 545)">
+                        <rect width="130" height="38" rx="6" fill="rgba(76,29,149,0.35)" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <text x="65" y="16" text-anchor="middle" class="uml-stereo" style="font-size:9px">«regularizer»</text>
+                        <text x="65" y="32" text-anchor="middle" class="uml-header" style="font-size:12px">SIGReg</text>
+                    </g>
+
+                    <!-- 4. WorldModel -->
+                    <g class="uml-class" data-id="worldmodel" transform="translate(430, 300)">
+                        <rect width="310" height="240" rx="10" fill="#78350f" stroke="#f59e0b" stroke-width="2"/>
+                        <text x="155" y="22" text-anchor="middle" class="uml-stereo">«nn.Module — Simulateur»</text>
+                        <text x="155" y="42" text-anchor="middle" class="uml-header">WorldModel</text>
+                        <line x1="12" y1="52" x2="298" y2="52" class="uml-sep"/>
+                        <text x="16" y="70" class="uml-attr">- input_proj: Lin(36→128)+ReLU</text>
+                        <text x="16" y="86" class="uml-attr">- rnn_cell: GRUCell(128, 128)</text>
+                        <text x="16" y="102" class="uml-attr">- predictor: Lin(128→128→32)</text>
+                        <text x="16" y="118" class="uml-attr">- latent_dim: 32</text>
+                        <text x="16" y="134" class="uml-attr">- hidden_dim: 128</text>
+                        <line x1="12" y1="144" x2="298" y2="144" class="uml-sep"/>
+                        <text x="16" y="162" class="uml-meth">+ init_hidden(B, device) → h_0</text>
+                        <text x="16" y="182" class="uml-meth">+ forward_step(s_t, a_t, h_t)</text>
+                        <text x="30" y="198" class="uml-attr" style="fill:#475569">→ (s_next, h_next)  [1 pas]</text>
+                        <text x="16" y="218" class="uml-meth">+ forward_seq(s_0, a_seq, h_0)</text>
+                        <text x="30" y="234" class="uml-attr" style="fill:#475569">→ (s_preds, h_seq)  [BPTT]</text>
+                    </g>
+
+                    <!-- 5. ShortTermMemory -->
+                    <g class="uml-class" data-id="memory" transform="translate(430, 620)">
+                        <rect width="310" height="180" rx="10" fill="#1e293b" stroke="#64748b" stroke-width="2"/>
+                        <text x="155" y="22" text-anchor="middle" class="uml-stereo">«buffer — Replay Memory»</text>
+                        <text x="155" y="42" text-anchor="middle" class="uml-header">ShortTermMemory</text>
+                        <line x1="12" y1="52" x2="298" y2="52" class="uml-sep"/>
+                        <text x="16" y="70" class="uml-attr">- buffer: list  (circulaire)</text>
+                        <text x="16" y="86" class="uml-attr">- capacity: int = 10000</text>
+                        <text x="16" y="102" class="uml-attr">- position: int  (curseur)</text>
+                        <line x1="12" y1="112" x2="298" y2="112" class="uml-sep"/>
+                        <text x="16" y="130" class="uml-meth">+ push(x_t, a_t, x_next, r, done)</text>
+                        <text x="16" y="150" class="uml-meth">+ sample_transitions(batch_size)</text>
+                        <text x="16" y="170" class="uml-meth">+ sample_sequences(B, seq_len)</text>
+                    </g>
+
+                    <!-- 6. Actor -->
+                    <g class="uml-class" data-id="actor" transform="translate(780, 80)">
+                        <rect width="290" height="230" rx="10" fill="#1e3a5f" stroke="#38bdf8" stroke-width="2"/>
+                        <text x="145" y="22" text-anchor="middle" class="uml-stereo">«planner — CEM»</text>
+                        <text x="145" y="42" text-anchor="middle" class="uml-header">Actor</text>
+                        <line x1="12" y1="52" x2="278" y2="52" class="uml-sep"/>
+                        <text x="16" y="70" class="uml-attr">- N: int   (num_sequences)</text>
+                        <text x="16" y="86" class="uml-attr">- H: int   (horizon)</text>
+                        <text x="16" y="102" class="uml-attr">- M: int   (cem_iterations)</text>
+                        <text x="16" y="118" class="uml-attr">- K: int   (elite_size)</text>
+                        <text x="16" y="134" class="uml-attr">- gamma: float = 0.9</text>
+                        <text x="16" y="150" class="uml-attr">- action_dim: int = 4</text>
+                        <line x1="12" y1="160" x2="278" y2="160" class="uml-sep"/>
+                        <text x="16" y="178" class="uml-meth">+ plan(s_t, h_t, world_model,</text>
+                        <text x="16" y="194" class="uml-meth">       cost_module, s_goal,</text>
+                        <text x="16" y="210" class="uml-meth">       w_goal=1.0)</text>
+                        <text x="30" y="226" class="uml-attr" style="fill:#475569">→ (action, sequence, cost)</text>
+                    </g>
+
+                    <!-- 7. Configurator -->
+                    <g class="uml-class" data-id="configurator" transform="translate(780, 610)">
+                        <rect width="290" height="175" rx="10" fill="#1e293b" stroke="#64748b" stroke-width="2"/>
+                        <text x="145" y="22" text-anchor="middle" class="uml-stereo">«logic — Goal Manager»</text>
+                        <text x="145" y="42" text-anchor="middle" class="uml-header">Configurator</text>
+                        <line x1="12" y1="52" x2="278" y2="52" class="uml-sep"/>
+                        <text x="16" y="70" class="uml-attr">- s_target: Tensor (1, 32)</text>
+                        <text x="16" y="86" class="uml-attr">- s_station: Tensor (1, 32)</text>
+                        <text x="16" y="102" class="uml-attr">- latent_dim: int = 32</text>
+                        <line x1="12" y1="112" x2="278" y2="112" class="uml-sep"/>
+                        <text x="16" y="130" class="uml-meth">+ set_goals(s_target, s_station)</text>
+                        <text x="16" y="150" class="uml-meth">+ get_configuration(energy)</text>
+                        <text x="30" y="168" class="uml-attr" style="fill:#475569">→ (s_goal, w_e, w_c, w_goal)</text>
+                    </g>
+
+                </svg>
+
+                <div class="legend-bar">
+                    <div class="leg"><div class="leg-dot" style="background:#78350f;border-color:#f59e0b"></div>nn.Module (appris)</div>
+                    <div class="leg"><div class="leg-dot" style="background:#1e3a5f;border-color:#38bdf8"></div>Planificateur CEM</div>
+                    <div class="leg"><div class="leg-dot" style="background:#4c1d95;border-color:#8b5cf6"></div>Critique TD</div>
+                    <div class="leg"><div class="leg-dot" style="background:#0c4a6e;border-color:#0ea5e9"></div>Environnement</div>
+                    <div class="leg"><div class="leg-dot" style="background:#1e293b;border-color:#64748b"></div>Logique / Buffer</div>
+                </div>
+            </div>
+
+            <!-- ========== DETAIL PANEL ========== -->
+            <div class="detail-panel">
+
+                <div class="panel-placeholder" id="ph">
+                    <div class="bounce">👈</div>
+                    <h3>Sélectionnez une classe</h3>
+                    <p>Cliquez sur un bloc du diagramme pour explorer ses attributs, méthodes et signatures.</p>
+                </div>
+
+                <!-- ---- GridWorldEnv ---- -->
+                <div class="dc" id="d-gridworld">
+                    <div class="dc-head"><div class="dc-icon">🌍</div><div><h2>GridWorldEnv</h2><span class="fp">env/gridworld.py</span></div></div>
+                    <div class="dc-sec">
+                        <h4>Description</h4>
+                        <p>Environnement de grille procédurale. À chaque <code>reset()</code>, une nouvelle grille 10×10 est générée aléatoirement avec des obstacles, une cible et une station de recharge. L'accessibilité est garantie par un algorithme <strong>BFS</strong> (<code>_bfs_reachable</code>).</p>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Attributs</h4>
+                        <ul class="attr-list">
+                            <li><span class="attr-name">size</span><span class="attr-desc">Taille de la grille carrée. <span class="attr-type">int = 10</span></span></li>
+                            <li><span class="attr-name">max_energy</span><span class="attr-desc">Énergie maximale de l'agent (décrémentée à chaque pas). <span class="attr-type">int = 100</span></span></li>
+                            <li><span class="attr-name">obstacle_density</span><span class="attr-desc">Fraction de la grille occupée par des murs. <span class="attr-type">float = 0.15</span></span></li>
+                            <li><span class="attr-name">agent_pos</span><span class="attr-desc">Position courante de l'agent [row, col]. <span class="attr-type">list[int]</span></span></li>
+                            <li><span class="attr-name">target_pos</span><span class="attr-desc">Position de la cible à atteindre. <span class="attr-type">list[int]</span></span></li>
+                            <li><span class="attr-name">station_pos</span><span class="attr-desc">Position de la station de recharge. <span class="attr-type">list[int]</span></span></li>
+                            <li><span class="attr-name">obstacles</span><span class="attr-desc">Liste des positions de murs. <span class="attr-type">list[list[int]]</span></span></li>
+                        </ul>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Méthodes</h4>
+                        <div class="sig"><span class="kw">def</span> reset(<span class="pm">self</span>) → <span class="tp">Tensor(4, 10, 10)</span></div>
+                        <p>Régénère une grille entière et retourne l'observation initiale (4 canaux : obstacles, cible, station, agent).</p>
+                        <div class="sig"><span class="kw">def</span> step(<span class="pm">self, action: int</span>) → <span class="tp">(obs, reward, done)</span></div>
+                        <p>Exécute une action (0=Haut, 1=Bas, 2=Gauche, 3=Droite). Gère les collisions, l'énergie et les récompenses.</p>
+                        <div class="sig"><span class="kw">def</span> get_local_observation(<span class="pm">self</span>) → <span class="tp">Tensor(4, size, size)</span></div>
+                        <p>Construit le tenseur d'observation à 4 canaux binaires.</p>
+                        <div class="sig"><span class="kw">def</span> render(<span class="pm">self</span>) → <span class="tp">np.ndarray(size, size)</span></div>
+                        <p>Retourne un tableau 2D lisible (0=vide, 1=mur, 2=cible, 3=station, 4=agent).</p>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Récompenses</h4>
+                        <p>Pas normal : <strong>-1.0</strong> · Collision : <strong>-5.0</strong> · Station : <strong>+10.0</strong> · Cible : <strong>+100.0</strong></p>
+                    </div>
+                </div>
+
+                <!-- ---- Perception ---- -->
+                <div class="dc" id="d-perception">
+                    <div class="dc-head"><div class="dc-icon">👁️</div><div><h2>Perception</h2><span class="fp">modules/perception.py</span></div></div>
+                    <div class="dc-sec">
+                        <h4>Description</h4>
+                        <p>Encodeur CNN inspiré de <strong>ResNet</strong>. Compresse l'observation brute de la grille en un vecteur latent de 32 dimensions. L'espace latent est régularisé par <code>SIGReg</code> (pas de BatchNorm) pour empêcher le Latent Collapse.</p>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Attributs</h4>
+                        <ul class="attr-list">
+                            <li><span class="attr-name">encoder</span><span class="attr-desc">Pipeline CNN séquentiel complet. <span class="attr-type">nn.Sequential</span></span></li>
+                        </ul>
+                        <p style="margin-top:8px;color:#64748b;font-size:0.85rem">Architecture interne de <code>encoder</code> :</p>
+                        <div class="sig"><span class="cm"># Extraction de features</span>
+Conv2d(<span class="tp">4</span>→32, 3×3, pad=1) → ReLU
+2× ResidualBlock(32)         <span class="cm"># skip-connections</span>
+Conv2d(32→<span class="tp">64</span>, 3×3, <span class="kw">stride=2</span>) <span class="cm"># 10×10 → 5×5</span>
+2× ResidualBlock(64)
+<span class="cm"># Projection latente</span>
+Flatten → Linear(1600, 128) → ReLU
+Linear(128, <span class="rt">32</span>)</div>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Méthodes</h4>
+                        <div class="sig"><span class="kw">def</span> __init__(<span class="pm">self, in_channels=<span class="tp">4</span>, latent_dim=<span class="tp">32</span></span>)</div>
+                        <p>Construit l'encodeur. <code>in_channels=4</code> correspond aux 4 canaux de la grille.</p>
+                        <div class="sig"><span class="kw">def</span> forward(<span class="pm">self, x</span>) → <span class="rt">s_t</span>
+<span class="pm">  x:   (B, 4, 10, 10)</span> <span class="cm"># observation brute</span>
+<span class="rt">  s_t: (B, 32)</span>        <span class="cm"># vecteur latent</span></div>
+                        <p>Si <code>x</code> est 3D (pas de batch), <code>unsqueeze(0)</code> est ajouté automatiquement.</p>
+                    </div>
+                </div>
+
+                <!-- ---- WorldModel ---- -->
+                <div class="dc" id="d-worldmodel">
+                    <div class="dc-head"><div class="dc-icon">🧠</div><div><h2>WorldModel</h2><span class="fp">modules/world_model.py</span></div></div>
+                    <div class="dc-sec">
+                        <h4>Description</h4>
+                        <p>Simulateur interne de la physique du monde. Prédit l'état latent futur <code>s_{t+1}</code> à partir de l'état courant et d'une action, en utilisant un <strong>GRUCell</strong> comme mémoire temporelle et une <strong>prédiction résiduelle</strong> (<code>s_next = s_t + δ</code>).</p>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Attributs</h4>
+                        <ul class="attr-list">
+                            <li><span class="attr-name">input_proj</span><span class="attr-desc">Projette la concatenation (s_t, a_t) de dim 36 vers 128. <span class="attr-type">Linear(36,128)+ReLU</span></span></li>
+                            <li><span class="attr-name">rnn_cell</span><span class="attr-desc">Cellule récurrente qui maintient la mémoire temporelle h_t. <span class="attr-type">GRUCell(128, 128)</span></span></li>
+                            <li><span class="attr-name">predictor</span><span class="attr-desc">Prédit le résidu δ à partir de l'état caché. <span class="attr-type">Lin(128→128→128→32)</span></span></li>
+                            <li><span class="attr-name">latent_dim</span><span class="attr-desc">Dimension de l'espace latent. <span class="attr-type">int = 32</span></span></li>
+                            <li><span class="attr-name">hidden_dim</span><span class="attr-desc">Dimension de l'état caché du GRU. <span class="attr-type">int = 128</span></span></li>
+                        </ul>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Méthodes</h4>
+                        <div class="sig"><span class="kw">def</span> init_hidden(<span class="pm">self, batch_size, device</span>) → <span class="rt">h_0</span>
+<span class="rt">  h_0: (B, 128)</span> <span class="cm"># vecteur de zéros</span></div>
+                        <p>Initialise l'état caché du RNN (mémoire vierge).</p>
+                        <div class="sig"><span class="kw">def</span> forward_step(<span class="pm">self, s_t, a_t, h_t</span>)
+<span class="pm">  s_t: (B, 32)</span>  <span class="cm"># état latent</span>
+<span class="pm">  a_t: (B, 4)</span>   <span class="cm"># action one-hot</span>
+<span class="pm">  h_t: (B, 128)</span> <span class="cm"># état caché</span>
+<span class="rt">  → (s_next, h_next)</span></div>
+                        <p>Un pas de simulation. Utilisé pour l'inférence et la planification CEM.</p>
+                        <div class="sig"><span class="kw">def</span> forward_seq(<span class="pm">self, s_0, a_seq, h_0=None</span>)
+<span class="pm">  s_0:   (B, 32)</span>      <span class="cm"># état initial</span>
+<span class="pm">  a_seq: (B, T, 4)</span>    <span class="cm"># séquence d'actions</span>
+<span class="rt">  → (s_preds: (B,T,32), h_seq: (B,T,128))</span></div>
+                        <p>Séquence complète en mode autorégressif (BPTT). Chaque prédiction est réinjectée comme entrée du pas suivant.</p>
+                    </div>
+                </div>
+
+                <!-- ---- Actor ---- -->
+                <div class="dc" id="d-actor">
+                    <div class="dc-head"><div class="dc-icon">🎮</div><div><h2>Actor</h2><span class="fp">modules/actor.py</span></div></div>
+                    <div class="dc-sec">
+                        <h4>Description</h4>
+                        <p>Planificateur par <strong>Cross-Entropy Method</strong> (CEM). N'hérite <strong>pas</strong> de <code>nn.Module</code> — c'est un algorithme d'optimisation pur, sans paramètres apprenables. Il échantillonne N trajectoires, les simule dans le WorldModel, évalue le coût combiné et raffine la distribution sur M itérations.</p>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Attributs</h4>
+                        <ul class="attr-list">
+                            <li><span class="attr-name">N</span><span class="attr-desc">Nombre de trajectoires échantillonnées par itération. <span class="attr-type">num_sequences</span></span></li>
+                            <li><span class="attr-name">H</span><span class="attr-desc">Profondeur de simulation (nombre de pas imaginés). <span class="attr-type">horizon</span></span></li>
+                            <li><span class="attr-name">M</span><span class="attr-desc">Nombre d'itérations de raffinement CEM. <span class="attr-type">cem_iterations</span></span></li>
+                            <li><span class="attr-name">K</span><span class="attr-desc">Nombre de séquences "élites" retenues à chaque itération. <span class="attr-type">elite_size</span></span></li>
+                            <li><span class="attr-name">gamma</span><span class="attr-desc">Facteur d'actualisation pour le coût cumulatif. <span class="attr-type">float = 0.9</span></span></li>
+                            <li><span class="attr-name">action_dim</span><span class="attr-desc">Nombre d'actions possibles (Haut/Bas/Gauche/Droite). <span class="attr-type">int = 4</span></span></li>
+                        </ul>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Méthodes</h4>
+                        <div class="sig"><span class="kw">def</span> plan(<span class="pm">self, s_t, h_t,
+         world_model, cost_module,
+         s_goal, w_goal=1.0</span>)
+<span class="rt">  → (action: int, sequence: Tensor, cost: float)</span></div>
+                        <p><code>s_t</code> : état latent actuel (1, 32).</p>
+                        <p><code>h_t</code> : état caché RNN actuel (1, 128).</p>
+                        <p><code>world_model</code> : instance de <code>WorldModel</code> pour simuler les trajectoires.</p>
+                        <p><code>cost_module</code> : instance de <code>Cost</code> pour évaluer les états.</p>
+                        <p><code>s_goal</code> : vecteur latent cible (1, 32).</p>
+                        <p><code>w_goal</code> : poids de la distance au goal dans le coût total.</p>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Formule du Coût</h4>
+                        <div class="sig"><span class="cm"># Boussole + Critique</span>
+total_cost = <span class="tp">w_goal</span> × MSE(s_sim, s_goal) + cost_module(s_sim)
+<span class="cm"># Lissage de Laplace pour les élites</span>
+probs = (counts + 0.1) / (K + 0.1 × action_dim)</div>
+                    </div>
+                </div>
+
+                <!-- ---- Cost ---- -->
+                <div class="dc" id="d-cost">
+                    <div class="dc-head"><div class="dc-icon">⚖️</div><div><h2>Cost</h2><span class="fp">modules/cost.py</span></div></div>
+                    <div class="dc-sec">
+                        <h4>Description</h4>
+                        <p>Réseau Critique (Value Network). Estime le <strong>coût futur attendu</strong> d'un état latent. Entraîné par TD-Learning dans <code>main_colab.py</code> (1-step) et par N-Step TD dans <code>train_critic_only.py</code>. Le planificateur CEM <strong>minimise</strong> cette sortie.</p>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Attributs</h4>
+                        <ul class="attr-list">
+                            <li><span class="attr-name">critic</span><span class="attr-desc">MLP simple : Linear(32→32) → ReLU → Linear(32→1). <span class="attr-type">nn.Sequential</span></span></li>
+                        </ul>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Méthodes</h4>
+                        <div class="sig"><span class="kw">def</span> __init__(<span class="pm">self, latent_dim=<span class="tp">32</span></span>)</div>
+                        <p>Construit le MLP du Critique.</p>
+                        <div class="sig"><span class="kw">def</span> forward(<span class="pm">self, s_t</span>) → <span class="rt">V(s_t): (B, 1)</span>
+<span class="pm">  s_t: (B, 32)</span> <span class="cm"># état(s) latent(s)</span></div>
+                        <p>Retourne un scalaire par état. <strong>Plus V est bas, meilleur est l'état</strong> pour le planificateur.</p>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Équation d'entraînement (N-Step TD)</h4>
+                        <div class="sig"><span class="cm"># Cible = somme de coûts sur N=3 pas</span>
+target = <span class="tp">-r_t</span> + γ(<span class="tp">-r_{t+1}</span>) + γ²(<span class="tp">-r_{t+2}</span>) + γ³·V_target(s_{t+3})
+<span class="cm"># Signe inversé car le CEM minimise le coût</span></div>
+                    </div>
+                </div>
+
+                <!-- ---- Configurator ---- -->
+                <div class="dc" id="d-configurator">
+                    <div class="dc-head"><div class="dc-icon">🎯</div><div><h2>Configurator</h2><span class="fp">modules/configurator.py</span></div></div>
+                    <div class="dc-sec">
+                        <h4>Description</h4>
+                        <p>Automate logique pur (n'hérite <strong>pas</strong> de <code>nn.Module</code>). Il agit comme le "cortex préfrontal" : il bascule l'objectif de l'agent entre la cible et la station de recharge en fonction de l'énergie restante.</p>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Attributs</h4>
+                        <ul class="attr-list">
+                            <li><span class="attr-name">s_target</span><span class="attr-desc">Vecteur latent de la cible finale. <span class="attr-type">Tensor (1, 32)</span></span></li>
+                            <li><span class="attr-name">s_station</span><span class="attr-desc">Vecteur latent de la station de recharge. <span class="attr-type">Tensor (1, 32)</span></span></li>
+                            <li><span class="attr-name">latent_dim</span><span class="attr-desc">Dimension de l'espace latent. <span class="attr-type">int = 32</span></span></li>
+                        </ul>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Méthodes</h4>
+                        <div class="sig"><span class="kw">def</span> set_goals(<span class="pm">self, s_target, s_station</span>)</div>
+                        <p>Enregistre les vecteurs latents des deux objectifs (obtenus en passant des observations synthétiques dans la <code>Perception</code>).</p>
+                        <div class="sig"><span class="kw">def</span> get_configuration(<span class="pm">self, energy</span>)
+<span class="rt">  → (s_goal, w_energy, w_collision, w_goal)</span></div>
+                        <p><strong>Si energy > 30</strong> : s_goal=s_target, w_energy=0.1, w_goal=1.0</p>
+                        <p><strong>Si energy ≤ 30</strong> : s_goal=s_station, w_energy=5.0, w_goal=2.0</p>
+                        <p><code>w_collision</code> est toujours fixé à 1.0.</p>
+                    </div>
+                </div>
+
+                <!-- ---- ShortTermMemory ---- -->
+                <div class="dc" id="d-memory">
+                    <div class="dc-head"><div class="dc-icon">💾</div><div><h2>ShortTermMemory</h2><span class="fp">modules/memory.py</span></div></div>
+                    <div class="dc-sec">
+                        <h4>Description</h4>
+                        <p>Replay Buffer circulaire (l'"hippocampe" de l'agent). Stocke les transitions vécues sur CPU et permet de les rejouer lors de l'entraînement pour briser la corrélation temporelle.</p>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Attributs</h4>
+                        <ul class="attr-list">
+                            <li><span class="attr-name">buffer</span><span class="attr-desc">Liste circulaire stockant les transitions (x_t, a_t, x_next, r, done). <span class="attr-type">list</span></span></li>
+                            <li><span class="attr-name">capacity</span><span class="attr-desc">Taille maximale du buffer. Les anciennes transitions sont écrasées. <span class="attr-type">int = 10000</span></span></li>
+                            <li><span class="attr-name">position</span><span class="attr-desc">Curseur d'écriture courant dans le buffer circulaire. <span class="attr-type">int</span></span></li>
+                        </ul>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Méthodes</h4>
+                        <div class="sig"><span class="kw">def</span> push(<span class="pm">self, x_t, a_t, x_next, reward, done</span>)</div>
+                        <p>Stocke une transition. Les tenseurs sont convertis en CPU pour ne pas saturer la VRAM.</p>
+                        <div class="sig"><span class="kw">def</span> sample_transitions(<span class="pm">self, batch_size</span>)
+<span class="rt">  → (x, a, x_next, r, d)</span></div>
+                        <p>Échantillonnage aléatoire de transitions individuelles (TD classique 1-step).</p>
+                        <div class="sig"><span class="kw">def</span> sample_sequences(<span class="pm">self, batch_size, seq_len=8</span>)
+<span class="rt">  → (x_0, a_seq, x_next_seq, r_seq, d_seq)</span>
+<span class="cm">  # Vérifie : pas de done au milieu</span>
+<span class="cm">  # Vérifie : pas de traversée du curseur</span></div>
+                        <p>Extraction de séquences temporelles contiguës pour le BPTT (World Model) et le N-Step TD (Critique). Lève <code>ValueError</code> si pas assez de séquences valides.</p>
+                    </div>
+                </div>
+
+                <!-- ---- SIGReg ---- -->
+                <div class="dc" id="d-sigreg">
+                    <div class="dc-head"><div class="dc-icon">📐</div><div><h2>SIGReg</h2><span class="fp">modules/sigreg.py</span></div></div>
+                    <div class="dc-sec">
+                        <h4>Description</h4>
+                        <p><strong>Sketch Isotropic Gaussian Regularizer.</strong> Fonction de perte qui force la distribution des vecteurs latents à rester proche d'une gaussienne isotrope N(0, I). Empêche le Latent Collapse sans heuristique EMA.</p>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Attributs</h4>
+                        <ul class="attr-list">
+                            <li><span class="attr-name">num_proj</span><span class="attr-desc">Nombre de directions de projection aléatoires. <span class="attr-type">int = 1024</span></span></li>
+                            <li><span class="attr-name">t</span><span class="attr-desc">Points d'évaluation de la fonction caractéristique. <span class="attr-type">linspace(0, 3, 17)</span></span></li>
+                            <li><span class="attr-name">phi</span><span class="attr-desc">Fonction caractéristique gaussienne de référence. <span class="attr-type">exp(-t²/2)</span></span></li>
+                            <li><span class="attr-name">weights</span><span class="attr-desc">Coefficients de quadrature trapézoïdale. <span class="attr-type">Tensor(17)</span></span></li>
+                        </ul>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Méthodes</h4>
+                        <div class="sig"><span class="kw">def</span> forward(<span class="pm">self, proj</span>) → <span class="rt">loss: scalar</span>
+<span class="pm">  proj: (B, D) ou (T, B, D)</span></div>
+                        <p>Calcule la statistique d'<strong>Epps-Pulley</strong> : projette les vecteurs sur 1024 directions aléatoires, compare la fonction caractéristique empirique à celle d'une gaussienne standard, et retourne l'écart moyen à minimiser.</p>
+                    </div>
+                    <div class="dc-sec">
+                        <h4>Source</h4>
+                        <p>Adapté de <a href="https://github.com/lucas-maes/le-wm.git" style="color:#38bdf8">lucas-maes/le-wm</a></p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>Projet d'Intelligence Artificielle Autonome (Deep-JEPA) — 2026</p>
+    </footer>
+
+    <script>
+        const boxes = document.querySelectorAll('.uml-class');
+        const ph = document.getElementById('ph');
+        const allDC = document.querySelectorAll('.dc');
+
+        boxes.forEach(box => {
+            box.addEventListener('click', () => {
+                const id = box.dataset.id;
+                boxes.forEach(b => b.classList.remove('active'));
+                box.classList.add('active');
+                ph.style.display = 'none';
+                allDC.forEach(d => d.classList.remove('show'));
+                const target = document.getElementById('d-' + id);
+                if (target) target.classList.add('show');
+            });
+        });
+    </script>
+</body>
+</html>

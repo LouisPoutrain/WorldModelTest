@@ -29,7 +29,7 @@ def create_synthetic_target_obs(env, target_type='target'):
     return obs
 
 def main():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     print(f"Initialisation des modules (Deep-JEPA) sur {device}...")
     env = GridWorldEnv(size=10, max_energy=100)
     

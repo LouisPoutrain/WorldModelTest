@@ -18,9 +18,9 @@ def main():
     device = torch.device("cpu")
     
     # 1. Charger le modèle
-    perception = Perception(in_channels=4, latent_dim=32).to(device)
+    perception = Perception(in_channels=4, grid_size=10, embed_dim=64, latent_dim=32).to(device)
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    checkpoint_path = os.path.join(base_dir, "checkpoints", "agent_checkpoint.pth")
+    checkpoint_path = os.path.join(base_dir, "checkpoints", "perception_jepa.pth")
     
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path, map_location=device)

@@ -2,3 +2,5 @@ torch
 numpy
 matplotlib
 imageio-ffmpeg
+tqdm
+scikit-learn

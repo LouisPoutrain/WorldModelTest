@@ -8,11 +8,9 @@ class Cost(nn.Module):
         # Le Critique pour estimer le coût futur attendu (TD-Learning)
         # Sortie : Coût attendu
         self.critic = nn.Sequential(
-            nn.Linear(latent_dim, 128),
+            nn.Linear(latent_dim, 32),
             nn.ReLU(),
-            nn.Linear(128, 128),
-            nn.ReLU(),
-            nn.Linear(128, 1)
+            nn.Linear(32, 1)
         )
         
     def forward(self, s_t, *args, **kwargs):

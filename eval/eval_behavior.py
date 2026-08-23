@@ -108,7 +108,7 @@ def main():
     print("🧪 Évaluation V2 : Collecte de Télémétrie")
     device = torch.device("cpu")
     
-    perception = Perception(in_channels=4, grid_size=10, embed_dim=64, latent_dim=32).to(device)
+    perception = Perception(in_channels=4, latent_dim=32).to(device)
     configurator = Configurator(latent_dim=32)
     world_model = WorldModel(latent_dim=32, action_dim=4, hidden_dim=128).to(device)
     cost = Cost(latent_dim=32).to(device)
@@ -120,34 +120,26 @@ def main():
     if len(sys.argv) > 1:
         checkpoint_path = sys.argv[1]
     else:
-        # Load World Model from v2 or re-train? We'll load the existing one for now or expect a new one
         checkpoint_path = os.path.join(base_dir, "checkpoints", "agent_checkpoint_v2.pth")
-    print(f"📦 Checkpoint WM : {checkpoint_path}")
+    print(f"📦 Checkpoint : {checkpoint_path}")
     
-    perception_path = os.path.join(base_dir, "checkpoints", "perception_jepa.pth")
-    critic_path = os.path.join(base_dir, "checkpoints", "critic_supervised.pth")
-
-    if os.path.exists(perception_path):
-        perception.load_state_dict(torch.load(perception_path, map_location=device)['perception'])
-        print("✅ Perception I-JEPA V2.5 chargée.")
-    else:
-        print("❌ Perception I-JEPA introuvable.")
-        return
-        
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path, map_location=device)
-        if 'world_model' in checkpoint:
-            world_model.load_state_dict(checkpoint['world_model'])
-            print("✅ World Model chargé.")
-    else:
-        print("⚠️ World Model introuvable, utilisation d'un modèle non entraîné.")
+        perception.load_state_dict(checkpoint['perception'])
+        world_model.load_state_dict(checkpoint['world_model'])
         
-    if os.path.exists(critic_path):
-        cp_critic = torch.load(critic_path, map_location=device)
-        cost.critic.load_state_dict(cp_critic['critic'])
-        print("✅ Critique Supervisé V2.5 chargé.")
+        critic_path = os.path.join(base_dir, "checkpoints", "agent_critic_v2_td.pth")
+        if os.path.exists(critic_path):
+            cp_critic = torch.load(critic_path, map_location=device)
+            cost.load_state_dict(cp_critic['cost'])
+            print("✅ Critique V2 chargé.")
+        else:
+            print("❌ Critique V2 introuvable.")
+            return
+            
+        print("✅ Modèles V2 chargés.")
     else:
-        print("❌ Critique Supervisé introuvable.")
+        print("❌ Aucun checkpoint.")
         return
         
     perception.eval()

@@ -65,7 +65,7 @@ def evaluate_suite(name, env_setup_func, perception, configurator, actor, world_
                 # Calcul de la distance latente réelle actuelle
                 dist_latente_reelle = torch.sum((s_t - s_goal)**2).item()
                 
-                a_t, best_cost, _ = actor.plan(s_t, h_t, world_model, cost, s_goal, 0.0) # w_goal=0.0 pour 100% Critic
+                a_t, best_cost, _ = actor.plan(s_t, h_t, world_model, None, s_goal, 1.0) # w_goal=0.0 pour 100% Critic
                 
             old_pos = env.agent_pos.copy()
             obs, reward, done = env.step(a_t)
@@ -113,7 +113,7 @@ def main():
     world_model = WorldModel(latent_dim=32, action_dim=4, hidden_dim=128).to(device)
     cost = Cost(latent_dim=32).to(device)
     
-    actor = Actor(action_dim=4, num_sequences=500, horizon=10, cem_iterations=10, elite_size=50, w_critic=1.0)
+    actor = Actor(action_dim=4, num_sequences=2000, horizon=5, cem_iterations=10, elite_size=200, w_critic=0.0)
     
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
@@ -128,7 +128,7 @@ def main():
         perception.load_state_dict(checkpoint['perception'])
         world_model.load_state_dict(checkpoint['world_model'])
         
-        critic_path = os.path.join(base_dir, "checkpoints", "agent_critic_v2_td.pth")
+        critic_path = os.path.join(base_dir, "checkpoints", "agent_critic_v2_supervised.pth")
         if os.path.exists(critic_path):
             cp_critic = torch.load(critic_path, map_location=device)
             cost.load_state_dict(cp_critic['cost'])

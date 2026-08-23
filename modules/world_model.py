@@ -1,76 +1,96 @@
 import torch
 import torch.nn as nn
 
+class ConvGRUCell(nn.Module):
+    def __init__(self, input_dim, hidden_dim, kernel_size=3):
+        super().__init__()
+        padding = kernel_size // 2
+        self.conv_z = nn.Conv2d(input_dim + hidden_dim, hidden_dim, kernel_size, padding=padding)
+        self.conv_r = nn.Conv2d(input_dim + hidden_dim, hidden_dim, kernel_size, padding=padding)
+        self.conv_h = nn.Conv2d(input_dim + hidden_dim, hidden_dim, kernel_size, padding=padding)
+
+    def forward(self, x, h):
+        stacked = torch.cat([x, h], dim=1)
+        z = torch.sigmoid(self.conv_z(stacked))
+        r = torch.sigmoid(self.conv_r(stacked))
+        stacked_h = torch.cat([x, r * h], dim=1)
+        h_candidate = torch.tanh(self.conv_h(stacked_h))
+        h_new = (1 - z) * h + z * h_candidate
+        return h_new
+
 class WorldModel(nn.Module):
-    def __init__(self, latent_dim=32, action_dim=4, hidden_dim=128):
+    def __init__(self, latent_dim=16, action_dim=4, hidden_dim=32, spatial_size=10):
         super(WorldModel, self).__init__()
         
         self.latent_dim = latent_dim
         self.action_dim = action_dim
+        self.proj_dim = 64
+        self.action_encoder = nn.Embedding(action_dim, latent_dim)
         self.hidden_dim = hidden_dim
+        self.spatial_size = spatial_size
         
-        # Projeter (s_t, a_t) vers l'espace d'entrée du RNN
+        # Projeter (s_t, a_t) vers l'espace d'entrée du ConvGRU
         self.input_proj = nn.Sequential(
-            nn.Linear(latent_dim + action_dim, hidden_dim),
+            nn.Conv2d(latent_dim + latent_dim, hidden_dim, kernel_size=3, padding=1),
             nn.ReLU()
         )
         
-        # Le cœur de la mémoire (RNN)
-        # Il prend (s_t, a_t) projeté et l'état caché précédent h_{t-1}
-        self.rnn_cell = nn.GRUCell(input_size=hidden_dim, hidden_size=hidden_dim)
+        # Le cœur de la mémoire (ConvGRU)
+        self.rnn_cell = ConvGRUCell(input_dim=hidden_dim, hidden_dim=hidden_dim, kernel_size=3)
         
         # Prédire s_{t+1} à partir de l'état caché mis à jour h_t
         self.predictor = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
+            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, latent_dim)
+            nn.Conv2d(hidden_dim, latent_dim, kernel_size=3, padding=1)
+        )
+        
+        self.pred_proj = nn.Sequential(
+            nn.Conv2d(self.latent_dim, self.proj_dim, kernel_size=1),
+            nn.BatchNorm2d(self.proj_dim),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(self.proj_dim, self.proj_dim, kernel_size=1)
         )
         
     def init_hidden(self, batch_size, device):
-        """Retourne un état caché initial (vecteur de zéros)."""
-        return torch.zeros(batch_size, self.hidden_dim, device=device)
+        return torch.zeros(batch_size, self.hidden_dim, self.spatial_size, self.spatial_size, device=device)
         
     def forward_step(self, s_t, a_t, h_t):
-        """
-        Passe un pas temporel. Utilisé pour l'inférence et la planification.
-        s_t: (B, latent_dim)
-        a_t: (B, action_dim) one-hot
-        h_t: (B, hidden_dim) l'état caché courant
-        
-        Returns:
-            s_next: (B, latent_dim) l'état prédit
-            h_next: (B, hidden_dim) le nouvel état caché
-        """
-        if len(s_t.shape) == 1:
+        if h_t is None:
+            h_t = self.init_hidden(s_t.size(0), s_t.device)
+        if len(s_t.shape) == 3:
             s_t = s_t.unsqueeze(0)
-        if len(a_t.shape) == 1:
-            a_t = a_t.unsqueeze(0)
-            
-        x = torch.cat([s_t, a_t], dim=-1)
+        B, C, H, W = s_t.shape
+        
+        # a_t is now expected to be discrete [B], not one-hot!
+        # wait, if a_t is discrete [B], what if it's one-hot?
+        # In actor.py and train.py, we pass one_hot. So let's extract argmax to use Embedding.
+        if len(a_t.shape) == 2 and a_t.shape[1] == self.action_dim:
+            a_t_idx = torch.argmax(a_t, dim=1)
+        elif len(a_t.shape) == 3 and a_t.shape[2] == self.action_dim:
+            a_t_idx = torch.argmax(a_t, dim=2).squeeze(1) # [B]
+        else:
+            a_t_idx = a_t
+            if len(a_t_idx.shape) == 0:
+                a_t_idx = a_t_idx.unsqueeze(0)
+                
+        # Get action embedding and broadcast
+        a_emb = self.action_encoder(a_t_idx) # [B, latent_dim]
+        a_t_spatial = a_emb.view(B, self.latent_dim, 1, 1).expand(B, self.latent_dim, H, W)
+        
+        x = torch.cat([s_t, a_t_spatial], dim=1)
         x_proj = self.input_proj(x)
         
         # Mise à jour de la mémoire
         h_next = self.rnn_cell(x_proj, h_t)
         
-        # Prédiction (résiduelle par rapport à s_t pour aider l'apprentissage)
+        # Prédiction résiduelle
         delta = self.predictor(h_next)
-        s_next = s_t + delta
+        s_next = delta
         
         return s_next, h_next
         
-    def forward_seq(self, s_0, a_seq, h_0=None):
-        """
-        Traite une séquence entière. Utilisé pour l'entraînement (BPTT).
-        s_0: (B, latent_dim) L'état latent au début de la séquence (t=0)
-        a_seq: (B, T, action_dim) Les actions prises aux temps t=0 à T-1
-        h_0: (B, hidden_dim) État caché initial optionnel
-        
-        Returns:
-            s_preds: (B, T, latent_dim) Les prédictions pour t=1 à T
-            h_seq: (B, T, hidden_dim) Les états cachés pour t=1 à T
-        """
+    def forward_seq(self, s_0, a_seq, h_0=None, project=False):
         B, T, _ = a_seq.size()
         if h_0 is None:
             h_0 = self.init_hidden(B, s_0.device)
@@ -87,8 +107,13 @@ class WorldModel(nn.Module):
             s_preds.append(s_next.unsqueeze(1))
             h_seq.append(h_t.unsqueeze(1))
             
-            # Autoregressif : on utilise notre propre prédiction comme entrée pour le pas suivant
-            # (Cela force le modèle à apprendre une dynamique robuste sur le long terme)
             s_t = s_next
             
-        return torch.cat(s_preds, dim=1), torch.cat(h_seq, dim=1)
+        s_preds_cat = torch.cat(s_preds, dim=1)
+        if project:
+            # s_preds_cat is [B, T, C, H, W], pred_proj expects 4D
+            B, T, C, H, W = s_preds_cat.shape
+            s_preds_flat = s_preds_cat.view(B*T, C, H, W)
+            s_preds_proj = self.pred_proj(s_preds_flat).view(B, T, self.proj_dim, H, W)
+            return s_preds_proj, torch.cat(h_seq, dim=1)
+        return s_preds_cat, torch.cat(h_seq, dim=1)

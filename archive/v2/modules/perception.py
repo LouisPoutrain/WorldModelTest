@@ -18,12 +18,10 @@ class ResidualBlock(nn.Module):
         return out
 
 class Perception(nn.Module):
-    def __init__(self, in_channels=4, latent_dim=16, proj_dim=64):
+    def __init__(self, in_channels=4, latent_dim=32):
         super(Perception, self).__init__()
         
-        self.latent_dim = latent_dim
-        self.proj_dim = proj_dim
-        
+        # Un petit ResNet pour extraire des features topologiques riches
         self.encoder = nn.Sequential(
             nn.Conv2d(in_channels, 32, kernel_size=3, stride=1, padding=1),
             nn.ReLU(inplace=True),
@@ -31,26 +29,23 @@ class Perception(nn.Module):
             ResidualBlock(32),
             ResidualBlock(32),
             
-            nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1), # Downsample (5x5)
             nn.ReLU(inplace=True),
             
-            ResidualBlock(32),
-            ResidualBlock(32),
+            ResidualBlock(64),
+            ResidualBlock(64),
             
-            nn.Conv2d(32, self.latent_dim, kernel_size=1, stride=1)
-        )
-        
-        self.projector = nn.Sequential(
-            nn.Conv2d(self.latent_dim, self.proj_dim, kernel_size=1),
-            nn.BatchNorm2d(self.proj_dim),
+            nn.Flatten(),
+            nn.Linear(64 * 5 * 5, 128),
             nn.ReLU(inplace=True),
-            nn.Conv2d(self.proj_dim, self.proj_dim, kernel_size=1)
+            nn.Linear(128, latent_dim)
+            # Pas de BatchNorm finale car SIGReg s'occupe de régulariser l'espace latent.
         )
         
-    def forward(self, x, project=False):
+    def forward(self, x):
+        # x is expected to be of shape (B, C, 10, 10)
         if len(x.shape) == 3:
             x = x.unsqueeze(0)
+            
         s_t = self.encoder(x)
-        if project:
-            return self.projector(s_t)
         return s_t

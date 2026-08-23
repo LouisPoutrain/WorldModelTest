@@ -17,6 +17,11 @@ from modules.cost import Cost
 from modules.actor import Actor
 from visualize import create_synthetic_target_obs
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+
 class CustomGridWorldEnv(GridWorldEnv):
     def reset(self):
         self.agent_pos = [0, 0]

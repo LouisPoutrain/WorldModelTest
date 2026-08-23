@@ -14,6 +14,11 @@ from modules.world_model import WorldModel
 from modules.cost import Cost
 from modules.actor import Actor
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
 def create_synthetic_target_obs(env, target_type='target'):
     obs = torch.zeros((4, env.size, env.size), dtype=torch.float32)
     for o in env.obstacles:

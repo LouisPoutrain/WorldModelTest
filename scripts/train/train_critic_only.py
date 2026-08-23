@@ -8,7 +8,7 @@ import copy
 from tqdm import tqdm
 import random
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from env.gridworld import GridWorldEnv
 from modules.perception import Perception
@@ -17,7 +17,11 @@ from modules.world_model import WorldModel
 from modules.cost import Cost
 from modules.actor import Actor
 from modules.memory import ShortTermMemory
-from visualize import create_synthetic_target_obs
+from scripts.analysis.visualize import create_synthetic_target_obs
+
+import sys
+import os
+
 
 class MixedGridWorldEnv(GridWorldEnv):
     def reset(self):
@@ -71,15 +75,14 @@ def main():
     actor = Actor(action_dim=4, num_sequences=500, horizon=10, cem_iterations=10, elite_size=50)
     
     # 2. Charger les poids
-    checkpoint_path = "checkpoints/agent_checkpoint.pth"
+    checkpoint_path = "checkpoints/agent_checkpoint_v2.pth"
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path, map_location=device)
         perception.load_state_dict(checkpoint['perception'])
         world_model.load_state_dict(checkpoint['world_model'])
-        # cost.load_state_dict(checkpoint['cost']) # COMMENTÉ : Le critique doit réapprendre de zéro !
-        print("✅ Modèles de base chargés.")
+        print("✅ Modèles V2 chargés.")
     else:
-        print("❌ Aucun checkpoint trouvé.")
+        print("❌ Aucun checkpoint V2 trouvé.")
         return
         
     # 3. Geler la Perception et le World Model
@@ -100,7 +103,19 @@ def main():
         
     optimizer = torch.optim.Adam(cost.parameters(), lr=1e-3)
     memory = ShortTermMemory(capacity=50000)
-    env = MixedGridWorldEnv(size=10, max_energy=100)
+    
+    # Remplacement de MixedGridWorldEnv par le dataset hors-ligne
+    from env.gridworld import GridWorldEnv
+    import random
+    env = GridWorldEnv(size=10, max_energy=100)
+    
+    dataset_path = "dataset/grids_v2.pt"
+    if os.path.exists(dataset_path):
+        grids_dataset = torch.load(dataset_path)
+        print(f"✅ Dataset hors-ligne chargé : {len(grids_dataset)} grilles complexes.")
+    else:
+        print("❌ Dataset introuvable.")
+        return
     
     # Hyperparamètres
     num_episodes = 5000
@@ -113,9 +128,29 @@ def main():
     total_steps = 0
     losses = []
     
+    # Init CSV log
+    import csv
+    import time
+    log_dir = "logs"
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, "training_critic_v2_td.csv")
+    with open(log_path, 'w', newline='') as f:
+        csv.writer(f).writerow(['Timestamp', 'Episode', 'L_critic', 'Success_Rate'])
+        
+    recent_successes = 0
+    
     pbar = tqdm(range(num_episodes), desc="Entraînement Critique")
     for ep in pbar:
-        obs = env.reset()
+        # Charger une grille depuis le dataset
+        grid_data = random.choice(grids_dataset)
+        env.obstacles = grid_data['obstacles']
+        env.agent_pos = grid_data['agent_pos'].copy()
+        env.target_pos = grid_data['target_pos']
+        env.station_pos = grid_data['station_pos']
+        env.energy = env.max_energy
+        env.done = False
+        obs = env.get_local_observation()
+        
         x_t = obs
         h_t = world_model.init_hidden(1, device=device)
         
@@ -204,17 +239,33 @@ def main():
                     target_param.data.copy_(tau * param.data + (1.0 - tau) * target_param.data)
                     
             if done:
+                if env.agent_pos == env.target_pos:
+                    recent_successes += 1
                 break
                 
         # Logging temps réel
         if len(losses) > 0:
             pbar.set_postfix(loss=f"{np.mean(losses[-100:]):.4f}")
             
+        if (ep + 1) % 50 == 0:
+            sr = recent_successes / 50.0
+            avg_loss = np.mean(losses[-50:]) if len(losses) > 0 else 0
+            with open(log_path, 'a', newline='') as f:
+                csv.writer(f).writerow([
+                    time.strftime('%Y-%m-%d %H:%M:%S'),
+                    ep + 1,
+                    f"{avg_loss:.4f}",
+                    f"{sr:.4f}"
+                ])
+            recent_successes = 0
+            
+        # Sauvegarde périodique
+        if (ep + 1) % 500 == 0:
+            torch.save({'cost': cost.state_dict()}, "checkpoints/agent_critic_v2_td.pth")
+            
     # Sauvegarde
-    save_path = "checkpoints/agent_critic_nstep.pth"
+    save_path = "checkpoints/agent_critic_v2_td.pth"
     torch.save({
-        'perception': perception.state_dict(),
-        'world_model': world_model.state_dict(),
         'cost': cost.state_dict()
     }, save_path)
     

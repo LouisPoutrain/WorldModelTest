@@ -40,7 +40,7 @@ class Actor(torch.nn.Module):
             h_sim = world_model.init_hidden(self.num_sequences, device=device)
             # Copy current hidden state to all sequences
             if h_t is not None:
-                h_sim = h_t.expand(world_model.num_layers, self.num_sequences, -1).contiguous()
+                h_sim = h_t.expand(self.num_sequences, -1).contiguous()
             
             total_costs = torch.zeros(self.num_sequences, device=device)
             

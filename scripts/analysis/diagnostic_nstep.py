@@ -13,6 +13,11 @@ from modules.cost import Cost
 from modules.configurator import Configurator
 from modules.actor import Actor
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
 def create_obs_at_position(env, row, col):
     obs = torch.zeros((4, env.size, env.size), dtype=torch.float32)
     for o in env.obstacles:
@@ -45,7 +50,7 @@ def main():
     configurator = Configurator(latent_dim=latent_dim)
     actor = Actor(action_dim=4, num_sequences=500, horizon=10, cem_iterations=10, elite_size=50)
     
-    checkpoint_path = os.path.join("checkpoints", "agent_checkpoint.pth")
+    checkpoint_path = os.path.join("checkpoints", "agent_critic_nstep.pth")
     device = torch.device("cpu")
     if not os.path.exists(checkpoint_path):
         print("❌ Aucun checkpoint trouvé!")

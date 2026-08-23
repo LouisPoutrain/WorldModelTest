@@ -1,245 +1,205 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
+import torch.optim as optim
 import os
 import sys
-import copy
-from tqdm import tqdm
 import random
+import csv
+import time
+from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from env.gridworld import GridWorldEnv
 from modules.perception import Perception
-from modules.configurator import Configurator
 from modules.world_model import WorldModel
 from modules.cost import Cost
-from modules.actor import Actor
-from modules.memory import ShortTermMemory
-from visualize import create_synthetic_target_obs
 
-class MixedGridWorldEnv(GridWorldEnv):
-    def reset(self):
-        super().reset()
+class ReplayBuffer:
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.buffer = []
+        self.position = 0
         
-        # 50% de chance d'avoir un environnement OOD
-        rand = random.random()
-        if rand < 0.25:
-            # U-Trap
-            self.obstacles = []
-            self.agent_pos = [5, 3]
-            self.target_pos = [5, 6]
-            self.station_pos = [0, 0]
-            for i in range(3, 8):
-                self.obstacles.append([i, 5])
-            for j in range(5, 8):
-                self.obstacles.append([3, j])
-                self.obstacles.append([7, j])
-        elif rand < 0.50:
-            # ZigZag
-            self.obstacles = []
-            self.agent_pos = [0, 0]
-            self.target_pos = [9, 9]
-            self.station_pos = [5, 5]
-            for j in range(0, 8):
-                self.obstacles.append([2, j])
-            for j in range(2, 10):
-                self.obstacles.append([5, j])
-            for j in range(0, 8):
-                self.obstacles.append([8, j])
-        else:
-            # Random ID grid (déjà fait par super().reset())
-            pass
-            
-        self.done = False
-        return self.get_local_observation()
+    def push(self, state, target_g):
+        if len(self.buffer) < self.capacity:
+            self.buffer.append(None)
+        self.buffer[self.position] = (state, target_g)
+        self.position = (self.position + 1) % self.capacity
+        
+    def sample(self, batch_size):
+        batch = random.sample(self.buffer, batch_size)
+        states = torch.stack([x[0] for x in batch])
+        targets = torch.tensor([x[1] for x in batch], dtype=torch.float32).unsqueeze(1)
+        return states, targets
+        
+    def __len__(self):
+        return len(self.buffer)
 
 def main():
-    print("🚀 Entraînement du Critique par Monte Carlo Returns (pas de bootstrap)")
+    print("🚀 Entraînement du Critique (Phase 2 - Monte Carlo) avec Buffer & H_t corrigé")
     device = torch.device("cpu")
     
-    # 1. Initialiser
-    latent_dim = 32
-    perception = Perception(in_channels=4, latent_dim=latent_dim).to(device)
-    world_model = WorldModel(latent_dim=latent_dim, action_dim=4, hidden_dim=128).to(device)
-    cost = Cost(latent_dim=latent_dim).to(device)
-    
-    configurator = Configurator(latent_dim=latent_dim)
-    actor = Actor(action_dim=4, num_sequences=500, horizon=10, cem_iterations=10, elite_size=50)
-    
-    # 2. Charger les poids (Perception + WorldModel seulement)
-    checkpoint_path = "checkpoints/agent_checkpoint.pth"
-    if os.path.exists(checkpoint_path):
-        checkpoint = torch.load(checkpoint_path, map_location=device)
-        perception.load_state_dict(checkpoint['perception'])
-        world_model.load_state_dict(checkpoint['world_model'])
-        print("✅ Perception + WorldModel chargés (Critique part de zéro).")
-    else:
-        print("❌ Aucun checkpoint trouvé.")
+    env = GridWorldEnv(size=10, max_energy=100)
+    dataset_path = "dataset/grids_v2.pt"
+    if not os.path.exists(dataset_path):
+        print(f"❌ Dataset introuvable ({dataset_path}).")
         return
-        
-    # 3. Geler la Perception et le World Model
-    for param in perception.parameters():
-        param.requires_grad = False
-    for param in world_model.parameters():
-        param.requires_grad = False
+    grids_dataset = torch.load(dataset_path)
+    print(f"✅ Dataset hors-ligne chargé : {len(grids_dataset)} grilles.")
+    
+    latent_dim = 32
+    action_dim = 4
+    
+    perception = Perception(in_channels=4, latent_dim=latent_dim).to(device)
+    world_model = WorldModel(latent_dim=latent_dim, action_dim=action_dim, hidden_dim=128).to(device)
+    
+    checkpoint_path_v2 = "checkpoints/agent_checkpoint_v2.pth"
+    if os.path.exists(checkpoint_path_v2):
+        cp = torch.load(checkpoint_path_v2, map_location=device)
+        perception.load_state_dict(cp['perception'])
+        world_model.load_state_dict(cp['world_model'])
+        print(f"✅ Modèles V2 chargés.")
+    else:
+        print(f"❌ Checkpoint V2 introuvable.")
+        return
         
     perception.eval()
     world_model.eval()
-    cost.train()
+    for p in perception.parameters(): p.requires_grad = False
+    for p in world_model.parameters(): p.requires_grad = False
     
-    optimizer = torch.optim.Adam(cost.parameters(), lr=3e-4)
-    env = MixedGridWorldEnv(size=10, max_energy=100)
+    cost = Cost(latent_dim=latent_dim).to(device)
+    optimizer_critic = optim.Adam(cost.parameters(), lr=1e-3)
     
-    # Hyperparamètres
-    num_episodes = 10000
-    gamma = 0.90
-    epsilon = 0.5  # 50% aléatoire pour explorer les pièges
-    
-    losses = []
-    successes = 0
-    
-    # Replay buffer pour stocker des (s_t, G_t) pré-calculés
-    mc_buffer = []
-    mc_buffer_capacity = 200000
+    buffer = ReplayBuffer(50000)
     batch_size = 256
-    updates_per_episode = 4
     
-    pbar = tqdm(range(num_episodes), desc="Entraînement MC")
-    for ep in pbar:
-        obs = env.reset()
-        h_t = world_model.init_hidden(1, device=device)
+    num_episodes = 5000
+    gamma = 0.99
+    
+    log_dir = "logs"
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, "training_critic_v2.csv")
+    with open(log_path, 'w', newline='') as f:
+        csv.writer(f).writerow(['Timestamp', 'Episode', 'L_critic', 'Success_Rate'])
         
-        # Set goals
-        target_obs = create_synthetic_target_obs(env, 'target').unsqueeze(0).to(device)
-        station_obs = create_synthetic_target_obs(env, 'station').unsqueeze(0).to(device)
-        with torch.no_grad():
-            s_target = perception(target_obs)
-            s_station = perception(station_obs)
-            configurator.set_goals(s_target, s_station)
+    avg_loss_critic = 0.0
+    recent_successes = 0
+    train_steps = 0
+    
+    for episode in range(num_episodes):
+        grid_data = random.choice(grids_dataset)
+        env.obstacles = grid_data['obstacles']
+        env.agent_pos = grid_data['agent_pos'].copy()
+        env.target_pos = grid_data['target_pos']
+        env.station_pos = grid_data['station_pos']
+        env.energy = env.max_energy
+        env.done = False
         
-        # Collecter une trajectoire complète
-        episode_states = []  # Les états latents
-        episode_costs = []   # Les coûts instantanés (-reward)
+        obs = env.get_local_observation()
+        
+        episode_states = []
+        episode_rewards = []
+        
+        last_action = random.randint(0, 3)
+        epsilon = max(0.1, 1.0 - (episode / 2000.0))
+        
+        # Initialisation du vrai H_t pour l'épisode !
+        h_t_env = world_model.init_hidden(1, device)
         
         for step in range(100):
             obs_tensor = obs.unsqueeze(0).to(device)
             with torch.no_grad():
                 s_t = perception(obs_tensor)
-                episode_states.append(s_t.cpu())
             
-            s_goal, w_energy, w_collision, w_goal = configurator.get_configuration(env.energy)
+            episode_states.append(s_t.squeeze(0)) # Sauvegarder sans la dim batch
             
-            # Epsilon-Greedy CEM
             if random.random() < epsilon:
-                a_t = random.randint(0, 3)
+                if random.random() < 0.7:
+                    a_t = last_action
+                else:
+                    a_t = random.randint(0, 3)
             else:
-                a_t, _, _ = actor.plan(s_t, h_t, world_model, cost, s_goal, w_goal)
-            
+                with torch.no_grad():
+                    best_a = 0
+                    min_v = float('inf')
+                    for a in range(4):
+                        a_onehot = F.one_hot(torch.tensor([a]), num_classes=4).float().to(device)
+                        s_next, _ = world_model.forward_step(s_t, a_onehot, h_t_env)
+                        v_next = cost(s_next).item()
+                        if v_next < min_v:
+                            min_v = v_next
+                            best_a = a
+                    a_t = best_a
+                    
+            last_action = a_t
             obs, reward, done = env.step(a_t)
             
-            # Coût instantané = négatif de la récompense (le CEM minimise)
-            # Récompenses shapées pour créer des montagnes d'énergie
-            if reward == -5.0:
-                instant_cost = 20.0
-            elif reward == 100.0:
-                instant_cost = -50.0
-            elif reward == 10.0:
-                instant_cost = -5.0
-            else:
-                instant_cost = -float(reward)
-            episode_costs.append(instant_cost)
-            
-            # Update hidden state
+            # Mise à jour du vrai h_t_env avec l'action choisie
             a_t_onehot = F.one_hot(torch.tensor([a_t]), num_classes=4).float().to(device)
             with torch.no_grad():
-                _, h_t = world_model.forward_step(s_t, a_t_onehot, h_t)
+                _, h_t_env = world_model.forward_step(s_t, a_t_onehot, h_t_env)
+            
+            if reward == 100.0:
+                step_cost = 0.0
+            elif reward == -5.0:
+                step_cost = 5.0
+            else:
+                step_cost = 1.0
+                
+            episode_rewards.append(step_cost)
             
             if done:
                 if env.agent_pos == env.target_pos:
-                    successes += 1
+                    recent_successes += 1
                 break
-        
-        # ===== MONTE CARLO : Calculer les retours G_t en remontant le temps =====
-        T = len(episode_costs)
-        returns = [0.0] * T
-        G = 0.0
-        for t in reversed(range(T)):
-            G = episode_costs[t] + gamma * G
-            returns[t] = G
-        
-        # Stocker dans le buffer MC
-        for t in range(T):
-            mc_buffer.append((episode_states[t], returns[t]))
-        
-        # Garder le buffer à taille raisonnable
-        if len(mc_buffer) > mc_buffer_capacity:
-            mc_buffer = mc_buffer[-mc_buffer_capacity:]
-        
-        # ===== Entraîner le Critique sur le buffer MC =====
-        if len(mc_buffer) >= batch_size:
-            ep_losses = []
-            for _ in range(updates_per_episode):
-                batch = random.sample(mc_buffer, batch_size)
-                s_batch = torch.cat([b[0] for b in batch], dim=0).to(device)  # (B, 32)
-                g_batch = torch.tensor([b[1] for b in batch], dtype=torch.float32).to(device)  # (B,)
                 
-                v_pred = cost(s_batch).squeeze(1)  # (B,)
-                loss = F.mse_loss(v_pred, g_batch)
-                
-                optimizer.zero_grad()
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(cost.parameters(), 1.0)
-                optimizer.step()
-                
-                ep_losses.append(loss.item())
+        # Calcul des retours et ajout au buffer
+        G = 0
+        for i in reversed(range(len(episode_rewards))):
+            G = episode_rewards[i] + gamma * G
+            buffer.push(episode_states[i], G)
             
-            losses.append(np.mean(ep_losses))
+        # Entraînement sur batch
+        if len(buffer) > batch_size:
+            cost.train()
+            optimizer_critic.zero_grad()
+            
+            s_batch, g_batch = buffer.sample(batch_size)
+            s_batch = s_batch.to(device)
+            g_batch = g_batch.to(device)
+            
+            v_preds = cost(s_batch)
+            loss_critic = F.mse_loss(v_preds, g_batch)
+            
+            loss_critic.backward()
+            optimizer_critic.step()
+            
+            avg_loss_critic += loss_critic.item()
+            train_steps += 1
         
-        # Logging
-        if len(losses) > 0:
-            recent_loss = np.mean(losses[-100:])
-            sr = successes / (ep + 1) * 100
-            pbar.set_postfix(loss=f"{recent_loss:.2f}", sr=f"{sr:.0f}%", buf=f"{len(mc_buffer)//1000}k")
-    
-    # Sauvegarde
-    save_path = "checkpoints/agent_critic_mc.pth"
-    torch.save({
-        'perception': perception.state_dict(),
-        'world_model': world_model.state_dict(),
-        'cost': cost.state_dict()
-    }, save_path)
-    
-    # Graphique
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=(12, 5))
-    
-    def smooth(scalars, weight=0.95):
-        last = scalars[0]
-        smoothed = []
-        for point in scalars:
-            s = last * weight + (1 - weight) * point
-            smoothed.append(s)
-            last = s
-        return smoothed
-    
-    if len(losses) > 0:
-        plt.subplot(1, 1, 1)
-        plt.plot(smooth(losses), color="#8b5cf6", linewidth=2)
-        plt.title("Loss du Critique (Monte Carlo Returns)")
-        plt.xlabel("Épisodes")
-        plt.ylabel("MSE")
-        plt.grid(True, linestyle="--", alpha=0.6)
-        plt.yscale('log')
-    
-    os.makedirs("media", exist_ok=True)
-    plt.savefig("media/critic_mc_loss.png", dpi=300, bbox_inches='tight')
-    print(f"\n📈 Graphique sauvegardé dans media/critic_mc_loss.png")
-    print(f"🎉 Entraînement terminé ! Checkpoint : {save_path}")
-    print(f"📊 Taux de succès final (exploration ε=0.5) : {successes/num_episodes*100:.1f}%")
-
+        if (episode + 1) % 50 == 0:
+            n = max(train_steps, 1)
+            sr = recent_successes / 50.0
+            print(f"Ep {episode+1:4d}/{num_episodes} | L_critic: {avg_loss_critic/n:8.4f} | Succès (Eps={epsilon:.2f}): {sr*100:3.0f}%")
+            
+            with open(log_path, 'a', newline='') as f:
+                csv.writer(f).writerow([
+                    time.strftime('%Y-%m-%d %H:%M:%S'),
+                    episode + 1,
+                    f"{avg_loss_critic/n:.4f}",
+                    f"{sr:.4f}"
+                ])
+                
+            avg_loss_critic = 0.0
+            recent_successes = 0
+            train_steps = 0
+            
+        if (episode + 1) % 500 == 0 or (episode + 1) == num_episodes:
+            checkpoint_out = "checkpoints/agent_critic_v2.pth"
+            torch.save({'cost': cost.state_dict()}, checkpoint_out)
+            
 if __name__ == "__main__":
     main()

@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import os
 import sys
+import csv
 from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -11,10 +12,10 @@ from modules.perception import Perception
 from modules.configurator import Configurator
 from modules.world_model import WorldModel
 from modules.actor import Actor
-from visualize import create_synthetic_target_obs
+from modules.cost import Cost
+from scripts.analysis.visualize import create_synthetic_target_obs
 
 def generate_u_trap(env):
-    """Créer un piège en U autour de la cible."""
     env.obstacles = []
     env.agent_pos = [5, 3]
     env.target_pos = [5, 6]
@@ -25,7 +26,6 @@ def generate_u_trap(env):
         env.obstacles.append([7, j])
 
 def generate_zigzag(env):
-    """Labyrinthe en Zig-Zag."""
     env.obstacles = []
     env.agent_pos = [0, 0]
     env.target_pos = [9, 9]
@@ -34,7 +34,10 @@ def generate_zigzag(env):
     for j in range(2, 10): env.obstacles.append([5, j])
     for j in range(0, 8): env.obstacles.append([8, j])
 
-def evaluate_suite(name, env_setup_func, perception, configurator, actor, world_model, device, num_episodes=50):
+def setup_id(env):
+    env._generate_random_grid()
+
+def evaluate_suite(name, env_setup_func, perception, configurator, actor, world_model, cost, device, csv_writer, num_episodes=50):
     env = GridWorldEnv(size=10, max_energy=100)
     successes = 0
     total_steps = 0
@@ -59,9 +62,28 @@ def evaluate_suite(name, env_setup_func, perception, configurator, actor, world_
                 s_t = perception(obs_tensor)
                 s_goal, _, _, w_goal = configurator.get_configuration(env.energy)
                 
-                a_t, _, _ = actor.plan(s_t, h_t, world_model, None, s_goal, w_goal)
+                # Calcul de la distance latente réelle actuelle
+                dist_latente_reelle = torch.sum((s_t - s_goal)**2).item()
                 
+                a_t, best_cost, _ = actor.plan(s_t, h_t, world_model, cost, s_goal, 0.0) # w_goal=0.0 pour 100% Critic
+                
+            old_pos = env.agent_pos.copy()
             obs, reward, done = env.step(a_t)
+            
+            # Si le reward est -5.0, c'est un mur (collision)
+            wall_hit = (reward == -5.0)
+            
+            # Enregistrement dans le log
+            csv_writer.writerow([
+                name,
+                ep,
+                step,
+                f"({old_pos[0]},{old_pos[1]})",
+                ["HAUT", "BAS", "GAUCHE", "DROITE"][a_t],
+                wall_hit,
+                f"{dist_latente_reelle:.4f}",
+                f"{best_cost:.4f}"
+            ])
             
             import torch.nn.functional as F
             a_t_onehot = F.one_hot(torch.tensor([a_t]), num_classes=4).float().to(device)
@@ -82,19 +104,16 @@ def evaluate_suite(name, env_setup_func, perception, configurator, actor, world_
     
     return success_rate, avg_steps
 
-def setup_id(env):
-    env._generate_random_grid()
-
 def main():
-    print("🧪 Évaluation V2 : Boussole Pure (Sans Critique)")
+    print("🧪 Évaluation V2 : Collecte de Télémétrie")
     device = torch.device("cpu")
     
     perception = Perception(in_channels=4, latent_dim=32).to(device)
     configurator = Configurator(latent_dim=32)
     world_model = WorldModel(latent_dim=32, action_dim=4, hidden_dim=128).to(device)
+    cost = Cost(latent_dim=32).to(device)
     
-    # Horizon 25, w_critic = 0.0, Pas de pénalités
-    actor = Actor(action_dim=4, num_sequences=500, horizon=25, cem_iterations=10, elite_size=50, w_critic=0.0)
+    actor = Actor(action_dim=4, num_sequences=500, horizon=10, cem_iterations=10, elite_size=50, w_critic=1.0)
     
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
@@ -108,19 +127,44 @@ def main():
         checkpoint = torch.load(checkpoint_path, map_location=device)
         perception.load_state_dict(checkpoint['perception'])
         world_model.load_state_dict(checkpoint['world_model'])
-        print("✅ Modèles V2 chargés (Perception + WorldModel).")
+        
+        critic_path = os.path.join(base_dir, "checkpoints", "agent_critic_v2_td.pth")
+        if os.path.exists(critic_path):
+            cp_critic = torch.load(critic_path, map_location=device)
+            cost.load_state_dict(cp_critic['cost'])
+            print("✅ Critique V2 chargé.")
+        else:
+            print("❌ Critique V2 introuvable.")
+            return
+            
+        print("✅ Modèles V2 chargés.")
     else:
         print("❌ Aucun checkpoint.")
         return
         
     perception.eval()
     world_model.eval()
+    cost.eval()
+    
+    # Préparation du CSV
+    log_dir = os.path.join(base_dir, "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    csv_path = os.path.join(log_dir, "eval_metrics_v2.csv")
+    
+    f_csv = open(csv_path, 'w', newline='')
+    writer = csv.writer(f_csv)
+    writer.writerow([
+        "Test_Name", "Episode_ID", "Step", "Agent_Pos", "Action", 
+        "Wall_Hit", "Latent_Dist_to_Goal", "CEM_Predicted_Cost"
+    ])
     
     print("🚀 Lancement des évaluations...")
     
-    sr_id, step_id = evaluate_suite("ID", setup_id, perception, configurator, actor, world_model, device, 100)
-    sr_u, step_u = evaluate_suite("U-Trap", generate_u_trap, perception, configurator, actor, world_model, device, 20)
-    sr_zig, step_zig = evaluate_suite("ZigZag", generate_zigzag, perception, configurator, actor, world_model, device, 20)
+    sr_id, step_id = evaluate_suite("ID", setup_id, perception, configurator, actor, world_model, cost, device, writer, 100)
+    sr_u, step_u = evaluate_suite("U-Trap", generate_u_trap, perception, configurator, actor, world_model, cost, device, writer, 20)
+    sr_zig, step_zig = evaluate_suite("ZigZag", generate_zigzag, perception, configurator, actor, world_model, cost, device, writer, 20)
+    
+    f_csv.close()
     
     print("📊 BILAN DE GÉNÉRALISATION V2 :")
     print(f"| Test                 | Taux de Succès | Pas Moyens |")
@@ -128,6 +172,7 @@ def main():
     print(f"| In-Distribution (ID) | {sr_id:6.1f}%       | {step_id:6.1f}     |")
     print(f"| OOD: Piège en U      | {sr_u:6.1f}%       | {step_u:6.1f}     |")
     print(f"| OOD: Labyrinthe      | {sr_zig:6.1f}%       | {step_zig:6.1f}     |")
+    print(f"✅ Télémétrie sauvegardée dans : {csv_path}")
 
 if __name__ == "__main__":
     main()

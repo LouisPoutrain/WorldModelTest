@@ -25,10 +25,7 @@ def main():
     world_model = WorldModel(latent_dim=16, action_dim=4, hidden_dim=32, spatial_size=10).to(device)
     sigreg = SIGReg().to(device)
     
-    optimizer_wm = optim.Adam([
-        {'params': perception.parameters(), 'lr': 3e-4},
-        {'params': world_model.parameters(), 'lr': 3e-4}
-    ])
+    optimizer_wm = optim.Adam(world_model.parameters(), lr=3e-4)
     
     memory = ShortTermMemory(capacity=10000)
     
@@ -63,31 +60,30 @@ def main():
                 
         # Entraînement
         if len(memory) >= batch_size * seq_length:
-            try:
+            if True:
                 x_0_batch, a_seq_batch, x_next_seq_batch, r_batch, d_batch = memory.sample_sequences(batch_size, seq_length)
                 
                 x_0_batch = x_0_batch.to(device)
                 a_seq_batch = a_seq_batch.to(device)
                 x_next_seq_batch = x_next_seq_batch.to(device)
                 
-                a_seq_onehot = F.one_hot(a_seq_batch, num_classes=4).float()
+                a_seq_onehot = F.one_hot(a_seq_batch.long(), num_classes=4).float()
                 
-                s_0 = perception(x_0_batch, project=False)
-                s_0_proj = perception(x_0_batch, project=True)
+                s_0 = perception(x_0_batch)
                 
                 with torch.no_grad():
                     B, T_s, C, H, W = x_next_seq_batch.shape
-                    s_next_target_flat = target_encoder(x_next_seq_batch.view(B*T_s, C, H, W), project=True)
-                    s_next_target = s_next_target_flat.view(B, T_s, 64, 10, 10)
+                    s_next_target_flat = target_encoder(x_next_seq_batch.view(B*T_s, C, H, W))
+                    s_next_target = s_next_target_flat.view(B, T_s, 16, 10, 10)
                     
-                s_preds, h_seq = world_model.forward_seq(s_0, a_seq_batch, project=True)
+                s_preds, h_seq = world_model.forward_seq(s_0, a_seq_onehot)
                 
                 mse = (s_preds - s_next_target) ** 2
                 agent_mask = x_next_seq_batch[:, :, 3:4] # [B, T, 1, 10, 10]
                 # The agent mask is 1 at the agent's position, 0 elsewhere
                 weight_mask = torch.ones_like(mse) + 100.0 * agent_mask
                 loss_pred = (mse * weight_mask).mean()
-                loss_sigreg = sigreg(s_0_proj)
+                loss_sigreg = sigreg(s_0)
                 
                 loss = loss_pred + 1.0 * loss_sigreg
                 
@@ -104,7 +100,7 @@ def main():
                 avg_loss_sigreg += loss_sigreg.item()
                 log_count += 1
                 
-            except ValueError:
+            if False:
                 pass
                 
         if (episode + 1) % 50 == 0:

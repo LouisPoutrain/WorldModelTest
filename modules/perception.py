@@ -18,11 +18,10 @@ class ResidualBlock(nn.Module):
         return out
 
 class Perception(nn.Module):
-    def __init__(self, in_channels=4, latent_dim=16, proj_dim=64):
+    def __init__(self, in_channels=4, latent_dim=16):
         super(Perception, self).__init__()
         
         self.latent_dim = latent_dim
-        self.proj_dim = proj_dim
         
         self.encoder = nn.Sequential(
             nn.Conv2d(in_channels, 32, kernel_size=3, stride=1, padding=1),
@@ -40,17 +39,9 @@ class Perception(nn.Module):
             nn.Conv2d(32, self.latent_dim, kernel_size=1, stride=1)
         )
         
-        self.projector = nn.Sequential(
-            nn.Conv2d(self.latent_dim, self.proj_dim, kernel_size=1),
-            nn.BatchNorm2d(self.proj_dim),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(self.proj_dim, self.proj_dim, kernel_size=1)
-        )
+
         
-    def forward(self, x, project=False):
+    def forward(self, x):
         if len(x.shape) == 3:
             x = x.unsqueeze(0)
-        s_t = self.encoder(x)
-        if project:
-            return self.projector(s_t)
-        return s_t
+        return self.encoder(x)

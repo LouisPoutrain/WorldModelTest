@@ -1,466 +1,467 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deep-JEPA — Architecture Interactive</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deep-JEPA — V1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 
-    <!-- KaTeX -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
 
 
-    <!-- KaTeX Auto-Render -->
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <!-- KaTeX Auto-Render -->
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 
 </head>
 <body>
 
-    <!-- NAV BAR -->
-    <nav class="nav-bar" style="display:flex;justify-content:center;gap:20px;padding:15px 20px;border-bottom:1px solid var(--card-border);background:rgba(0,0,0,0.3);">
-        <a href="Archi.html" style="color:var(--primary);background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);text-decoration:none;font-size:0.95rem;padding:8px 18px;border-radius:8px;font-family:Inter,sans-serif;font-weight:500;">🧠 Architecture Interactive</a>
-        <a href="Classes.html" style="color:#94a3b8;text-decoration:none;font-size:0.95rem;padding:8px 18px;border-radius:8px;font-family:Inter,sans-serif;font-weight:500;transition:all 0.2s;" onmouseover="this.style.background='rgba(56,189,248,0.1)';this.style.color='#38bdf8'" onmouseout="this.style.background='';this.style.color='#94a3b8'">📐 Diagramme de Classes</a>
-    </nav>
+  <!-- NAV BAR -->
+  <nav class="nav-bar" style="display:flex;justify-content:center;gap:20px;padding:15px 20px;border-bottom:1px solid var(--card-border);background:rgba(0,0,0,0.3);">
+    <a href="Archi.html" style="color:var(--primary);background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);text-decoration:none;font-size:0.95rem;padding:8px 18px;border-radius:8px;font-family:Inter,sans-serif;font-weight:500;">V1</a>
+    <a href="Classes.html" style="color:#94a3b8;text-decoration:none;font-size:0.95rem;padding:8px 18px;border-radius:8px;font-family:Inter,sans-serif;font-weight:500;transition:all 0.2s;" onmouseover="this.style.background='rgba(56,189,248,0.1)';this.style.color='#38bdf8'" onmouseout="this.style.background='';this.style.color='#94a3b8'">Diagramme de Classes</a>
+    <a href="H-JEPA_Final.html" style="color:#94a3b8;text-decoration:none;font-size:0.95rem;padding:8px 18px;border-radius:8px;font-family:Inter,sans-serif;font-weight:500;transition:all 0.2s;" onmouseover="this.style.background='rgba(56,189,248,0.1)';this.style.color='#38bdf8'" onmouseout="this.style.background='';this.style.color='#94a3b8'">V3</a>
+  </nav>
 
 
-    <!-- ==================== HEADER ==================== -->
-    <header class="hero">
-        <div class="hero-glow"></div>
-        <div class="hero-content">
-            <span class="hero-badge">🧠 Intelligence Artificielle Autonome</span>
-            <h1>Deep-JEPA</h1>
-            <p class="hero-subtitle">
-                Un agent capable de <strong>penser avant d'agir</strong>.
-                <br>Inspiré de l'architecture cognitive proposée par <em>Yann LeCun</em> (Meta AI / Turing Award 2018).
-            </p>
+  <!-- ==================== HEADER ==================== -->
+  <header class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+      <span class="hero-badge"> Intelligence Artificielle Autonome</span>
+      <h1>Deep-JEPA</h1>
+      <p class="hero-subtitle">
+        Un agent capable de <strong>penser avant d'agir</strong>.
+        <br>Inspiré de l'architecture cognitive proposée par <em>Yann LeCun</em> (Meta AI / Turing Award 2018).
+      </p>
+    </div>
+  </header>
+
+  <!-- ==================== INTRO SECTION ==================== -->
+  <section class="intro-section">
+    <div class="intro-card">
+      <h2> L'idée en une phrase</h2>
+      <p>
+        Au lieu d'apprendre par essai-erreur aveugle, notre IA possède une capacité <strong>d'imagination</strong>. Elle simule mentalement les conséquences de ses actes avant même de bouger.
+      </p>
+    </div>
+    <div class="intro-card">
+      <h2> La mission</h2>
+      <p>
+        Trouver une cible dans un <strong>labyrinthe totalement inconnu</strong>, tout en gérant son énergie. L'agent doit planifier son chemin et faire des détours pour se recharger si besoin.
+      </p>
+    </div>
+    <div class="intro-card">
+      <h2> L'Espace Latent</h2>
+      <p>
+        Au lieu d'imaginer des images complexes pixel par pixel, l'agent réfléchit dans un espace mathématique simplifié (<strong>l'espace latent</strong>). C'est beaucoup plus rapide et performant.
+      </p>
+    </div>
+  </section>
+
+  <!-- ==================== MAIN ARCHITECTURE ==================== -->
+  <section class="arch-section">
+    <h2 class="section-title">Le Cerveau de l'Agent</h2>
+    <p class="section-subtitle">Cliquez sur un module du schéma pour comprendre son rôle (Panneau de droite)</p>
+
+    <div class="arch-layout">
+      <!-- LEFT: SVG Diagram -->
+      <div class="diagram-panel">
+        <svg viewBox="0 0 900 650" id="arch-svg" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <!-- Arrow markers -->
+            <marker id="arrow-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+            </marker>
+            <marker id="arrow-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8"/>
+            </marker>
+          </defs>
+
+          <!-- Background grids for visual flair -->
+          <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#1e293b" stroke-width="1" opacity="0.5"/>
+          </pattern>
+          <rect width="100%" height="100%" fill="url(#grid)" rx="12"/>
+
+          <!-- Zones (Subgraphs) -->
+          <!-- Monde Extérieur -->
+          <rect x="20" y="50" width="180" height="130" rx="12" class="zone-rect"/>
+          <text x="110" y="70" class="zone-title">MONDE EXTÉRIEUR</text>
+
+          <!-- Agent -->
+          <rect x="250" y="30" width="620" height="600" rx="16" class="zone-rect"/>
+          <text x="560" y="55" class="zone-title">AGENT INTELLIGENT (JEPA)</text>
+
+          <!-- Boucle CEM -->
+          <rect x="460" y="180" width="390" height="330" rx="12" class="zone-rect-cem"/>
+          <text x="655" y="205" class="zone-title-cem"> BOUCLE D'IMAGINATION (CEM)</text>
+
+
+          <!-- CONNECTIONS -->
+          <g class="conn-group" data-src="ENV" data-dst="PERC">
+            <path class="conn-line" d="M 180 125 L 270 125" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="225" y="115" text-anchor="middle">Vision</text>
+          </g>
+
+          <g class="conn-group" data-src="ENV" data-dst="CONF">
+            <path class="conn-line" d="M 110 160 L 110 335 L 270 335" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="195" y="325" text-anchor="middle">Énergie</text>
+          </g>
+
+          <g class="conn-group" data-src="PERC" data-dst="WM">
+            <path class="conn-line" d="M 410 125 L 445 125 L 445 260 L 470 260" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="455" y="190" text-anchor="start">s_t</text>
+          </g>
+
+          <g class="conn-group" data-src="CONF" data-dst="WM">
+            <path class="conn-line" d="M 410 335 L 445 335 L 445 300 L 470 300" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="455" y="330" text-anchor="start">s_goal</text>
+          </g>
+
+          <g class="conn-group" data-src="WM" data-dst="SIM">
+            <path class="conn-line" d="M 620 260 L 690 260" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="655" y="250" text-anchor="middle">a_sim</text>
+          </g>
+
+          <g class="conn-group" data-src="SIM" data-dst="WM">
+            <path class="conn-line" d="M 700 300 L 630 300" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="665" y="320" text-anchor="middle">s_next</text>
+          </g>
+
+          <g class="conn-group" data-src="WM" data-dst="COST">
+            <path class="conn-line" d="M 550 330 L 550 445 L 670 445" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="610" y="435" text-anchor="middle">Évaluer</text>
+          </g>
+
+          <g class="conn-group" data-src="COST" data-dst="WM">
+            <path class="conn-line" d="M 755 410 L 755 370 L 600 370 L 600 340" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="675" y="360" text-anchor="middle">Coût</text>
+          </g>
+
+          <g class="conn-group" data-src="WM" data-dst="ENV">
+            <path class="conn-line conn-main" d="M 480 280 L 360 280 L 360 500 L 90 500 L 90 170" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text conn-main-text" x="225" y="490" text-anchor="middle">Action choisie (a_t)</text>
+          </g>
+
+          <g class="conn-group" data-src="ENV" data-dst="MEM">
+            <path class="conn-line conn-dashed" d="M 70 160 L 70 585 L 640 585" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="350" y="575" text-anchor="middle">Souvenirs</text>
+          </g>
+
+          <!-- NODES -->
+          <!-- 1. ENV -->
+          <g class="node" id="node-ENV" onclick="selectModule('ENV')">
+            <rect x="40" y="90" width="140" height="70" rx="10" class="node-rect node-env"/>
+            <text x="110" y="125" class="node-text"> Environnement</text>
+            <text x="110" y="145" class="node-subtext">Gridworld 10x10</text>
+          </g>
+
+          <!-- 2. PERC -->
+          <g class="node" id="node-PERC" onclick="selectModule('PERC')">
+            <rect x="280" y="90" width="130" height="70" rx="10" class="node-rect node-core"/>
+            <text x="345" y="125" class="node-text"> Perception</text>
+            <text x="345" y="145" class="node-subtext">Réseau Visuel</text>
+          </g>
+
+          <!-- 3. CONF -->
+          <g class="node" id="node-CONF" onclick="selectModule('CONF')">
+            <rect x="280" y="300" width="130" height="70" rx="10" class="node-rect node-core"/>
+            <text x="345" y="335" class="node-text"> Objectif</text>
+            <text x="345" y="355" class="node-subtext">Directeur</text>
+          </g>
+
+          <!-- 4. WM -->
+          <g class="node" id="node-WM" onclick="selectModule('WM')">
+            <rect x="480" y="230" width="140" height="100" rx="10" class="node-rect node-core"/>
+            <text x="550" y="265" class="node-text"> Acteur</text>
+            <text x="550" y="285" class="node-subtext">Planificateur</text>
+            <text x="550" y="305" class="node-subtext">(Méthode CEM)</text>
+          </g>
+
+          <!-- 5. SIM -->
+          <g class="node" id="node-SIM" onclick="selectModule('SIM')">
+            <rect x="700" y="230" width="130" height="100" rx="10" class="node-rect node-sim"/>
+            <text x="765" y="265" class="node-text"> Modèle du</text>
+            <text x="765" y="285" class="node-text">Monde</text>
+            <text x="765" y="305" class="node-subtext">Simulateur JEPA</text>
+          </g>
+
+          <!-- 6. COST -->
+          <g class="node" id="node-COST" onclick="selectModule('COST')">
+            <rect x="680" y="410" width="150" height="70" rx="10" class="node-rect node-sim"/>
+            <text x="755" y="440" class="node-text"> Critique</text>
+            <text x="755" y="460" class="node-subtext">Évaluateur</text>
+          </g>
+
+          <!-- 7. MEM -->
+          <g class="node" id="node-MEM" onclick="selectModule('MEM')">
+            <rect x="650" y="550" width="180" height="70" rx="10" class="node-rect node-mem"/>
+            <text x="740" y="585" class="node-text"> Replay Buffer</text>
+            <text x="740" y="605" class="node-subtext">Mémoire (10k épisodes)</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- RIGHT: Detail Panel -->
+      <div class="detail-panel" id="detail-panel">
+        <!-- Initial empty state -->
+        <div class="panel-placeholder" id="panel-placeholder">
+          <div class="icon-bounce"></div>
+          <h3>Explorez l'Architecture</h3>
+          <p>Cliquez sur l'un des blocs du diagramme interactif pour découvrir ce qui se passe sous le capot de notre IA.</p>
         </div>
-    </header>
 
-    <!-- ==================== INTRO SECTION ==================== -->
-    <section class="intro-section">
-        <div class="intro-card">
-            <h2>💡 L'idée en une phrase</h2>
-            <p>
-                Au lieu d'apprendre par essai-erreur aveugle, notre IA possède une capacité <strong>d'imagination</strong>. Elle simule mentalement les conséquences de ses actes avant même de bouger.
-            </p>
+        <!-- Content state (hidden initially) -->
+        <div class="panel-content" id="panel-content" style="display: none;">
+          <div class="panel-header">
+            <div class="panel-icon-wrap">
+              <span class="panel-icon" id="p-icon"></span>
+            </div>
+            <div class="panel-header-text">
+              <h2 id="p-title">Titre</h2>
+              <span class="panel-subtitle" id="p-subtitle">Sous-titre</span>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <h3 class="section-heading"> Pour faire simple...</h3>
+            <div class="concept-box">
+              <p id="p-simple"></p>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <h3 class="section-heading"> Sous le capot</h3>
+            <p id="p-tech"></p>
+          </div>
+
+          
+          
+          <div class="panel-section" id="p-deep-section" style="display: none;">
+            <h3 class="section-heading"> Deep Dive (PyTorch & Théorie)</h3>
+            <div class="deep-box" id="p-deep"></div>
+          </div>
+
+          <div class="panel-section" id="p-math-section" style="display: none;">
+            <h3 class="section-heading"> Équation Clé</h3>
+            <div class="math-box" id="p-math"></div>
+          </div>
+
+          <div class="panel-section io-grid">
+            <div class="io-box in-box">
+              <span class="io-label">ENTRÉE</span>
+              <span class="io-val" id="p-in"></span>
+            </div>
+            <div class="io-box out-box">
+              <span class="io-label">SORTIE</span>
+              <span class="io-val" id="p-out"></span>
+            </div>
+          </div>
         </div>
-        <div class="intro-card">
-            <h2>🎯 La mission</h2>
-            <p>
-                Trouver une cible dans un <strong>labyrinthe totalement inconnu</strong>, tout en gérant son énergie. L'agent doit planifier son chemin et faire des détours pour se recharger si besoin.
-            </p>
+      </div>
+    </div>
+  </section>
+
+  
+  <!-- ==================== RECAP SECTION ==================== -->
+  <section class="recap-section">
+    <h2 class="section-title">Récapitulatif des Modules</h2>
+    <p class="section-subtitle">Vue d'ensemble statique de l'architecture complète</p>
+
+    <div class="recap-grid">
+      <!-- ENV -->
+      <div class="recap-card">
+        <div class="rc-header"><span class="rc-icon"></span><h3>Environnement</h3></div>
+        <div class="rc-content">
+          <p><strong>Modèle :</strong> Procédural (Python)</p>
+          <p><strong>Théorie :</strong> Processus de Décision Markovien (MDP)</p>
+          <p><strong>But :</strong> Fournir un monde physique (Gridworld 10x10) avec murs et énergie.</p>
+          <p><strong>Fonctionnement :</strong> Gère l'état caché et retourne une observation partielle 5x5 à l'agent.</p>
         </div>
-        <div class="intro-card">
-            <h2>🧬 L'Espace Latent</h2>
-            <p>
-                Au lieu d'imaginer des images complexes pixel par pixel, l'agent réfléchit dans un espace mathématique simplifié (<strong>l'espace latent</strong>). C'est beaucoup plus rapide et performant.
-            </p>
+      </div>
+      <!-- PERC -->
+      <div class="recap-card">
+        <div class="rc-header"><span class="rc-icon"></span><h3>Perception</h3></div>
+        <div class="rc-content">
+          <p><strong>Modèle :</strong> CNN (ResNet) / Encodeur Dual</p>
+          <p><strong>Théorie :</strong> Extraction de features abstraites</p>
+          <p><strong>But :</strong> Transformer les pixels bruts en Espace Latent sans effondrement.</p>
+          <p><strong>Fonctionnement :</strong> Convertit l'image en vecteur `s_t`. Stabilisé par EMA (Target Encoder) et SIGReg.</p>
         </div>
-    </section>
-
-    <!-- ==================== MAIN ARCHITECTURE ==================== -->
-    <section class="arch-section">
-        <h2 class="section-title">Le Cerveau de l'Agent</h2>
-        <p class="section-subtitle">Cliquez sur un module du schéma pour comprendre son rôle (Panneau de droite)</p>
-
-        <div class="arch-layout">
-            <!-- LEFT: SVG Diagram -->
-            <div class="diagram-panel">
-                <svg viewBox="0 0 900 650" id="arch-svg" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <!-- Arrow markers -->
-                        <marker id="arrow-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
-                        </marker>
-                        <marker id="arrow-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8"/>
-                        </marker>
-                    </defs>
-
-                    <!-- Background grids for visual flair -->
-                    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                        <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#1e293b" stroke-width="1" opacity="0.5"/>
-                    </pattern>
-                    <rect width="100%" height="100%" fill="url(#grid)" rx="12"/>
-
-                    <!-- Zones (Subgraphs) -->
-                    <!-- Monde Extérieur -->
-                    <rect x="20" y="50" width="180" height="130" rx="12" class="zone-rect"/>
-                    <text x="110" y="70" class="zone-title">MONDE EXTÉRIEUR</text>
-
-                    <!-- Agent -->
-                    <rect x="250" y="30" width="620" height="600" rx="16" class="zone-rect"/>
-                    <text x="560" y="55" class="zone-title">AGENT INTELLIGENT (JEPA)</text>
-
-                    <!-- Boucle CEM -->
-                    <rect x="460" y="180" width="390" height="330" rx="12" class="zone-rect-cem"/>
-                    <text x="655" y="205" class="zone-title-cem">🔄 BOUCLE D'IMAGINATION (CEM)</text>
-
-
-                    <!-- CONNECTIONS -->
-                    <g class="conn-group" data-src="ENV" data-dst="PERC">
-                        <path class="conn-line" d="M 180 125 L 270 125" marker-end="url(#arrow-gray)"/>
-                        <text class="conn-text" x="225" y="115" text-anchor="middle">Vision</text>
-                    </g>
-
-                    <g class="conn-group" data-src="ENV" data-dst="CONF">
-                        <path class="conn-line" d="M 110 160 L 110 335 L 270 335" marker-end="url(#arrow-gray)"/>
-                        <text class="conn-text" x="195" y="325" text-anchor="middle">Énergie</text>
-                    </g>
-
-                    <g class="conn-group" data-src="PERC" data-dst="WM">
-                        <path class="conn-line" d="M 410 125 L 445 125 L 445 260 L 470 260" marker-end="url(#arrow-gray)"/>
-                        <text class="conn-text" x="455" y="190" text-anchor="start">s_t</text>
-                    </g>
-
-                    <g class="conn-group" data-src="CONF" data-dst="WM">
-                        <path class="conn-line" d="M 410 335 L 445 335 L 445 300 L 470 300" marker-end="url(#arrow-gray)"/>
-                        <text class="conn-text" x="455" y="330" text-anchor="start">s_goal</text>
-                    </g>
-
-                    <g class="conn-group" data-src="WM" data-dst="SIM">
-                        <path class="conn-line" d="M 620 260 L 690 260" marker-end="url(#arrow-gray)"/>
-                        <text class="conn-text" x="655" y="250" text-anchor="middle">a_sim</text>
-                    </g>
-
-                    <g class="conn-group" data-src="SIM" data-dst="WM">
-                        <path class="conn-line" d="M 700 300 L 630 300" marker-end="url(#arrow-gray)"/>
-                        <text class="conn-text" x="665" y="320" text-anchor="middle">s_next</text>
-                    </g>
-
-                    <g class="conn-group" data-src="WM" data-dst="COST">
-                        <path class="conn-line" d="M 550 330 L 550 445 L 670 445" marker-end="url(#arrow-gray)"/>
-                        <text class="conn-text" x="610" y="435" text-anchor="middle">Évaluer</text>
-                    </g>
-
-                    <g class="conn-group" data-src="COST" data-dst="WM">
-                        <path class="conn-line" d="M 755 410 L 755 370 L 600 370 L 600 340" marker-end="url(#arrow-gray)"/>
-                        <text class="conn-text" x="675" y="360" text-anchor="middle">Coût</text>
-                    </g>
-
-                    <g class="conn-group" data-src="WM" data-dst="ENV">
-                        <path class="conn-line conn-main" d="M 480 280 L 360 280 L 360 500 L 90 500 L 90 170" marker-end="url(#arrow-gray)"/>
-                        <text class="conn-text conn-main-text" x="225" y="490" text-anchor="middle">Action choisie (a_t)</text>
-                    </g>
-
-                    <g class="conn-group" data-src="ENV" data-dst="MEM">
-                        <path class="conn-line conn-dashed" d="M 70 160 L 70 585 L 640 585" marker-end="url(#arrow-gray)"/>
-                        <text class="conn-text" x="350" y="575" text-anchor="middle">Souvenirs</text>
-                    </g>
-
-                    <!-- NODES -->
-                    <!-- 1. ENV -->
-                    <g class="node" id="node-ENV" onclick="selectModule('ENV')">
-                        <rect x="40" y="90" width="140" height="70" rx="10" class="node-rect node-env"/>
-                        <text x="110" y="125" class="node-text">🌍 Environnement</text>
-                        <text x="110" y="145" class="node-subtext">Gridworld 10x10</text>
-                    </g>
-
-                    <!-- 2. PERC -->
-                    <g class="node" id="node-PERC" onclick="selectModule('PERC')">
-                        <rect x="280" y="90" width="130" height="70" rx="10" class="node-rect node-core"/>
-                        <text x="345" y="125" class="node-text">👁️ Perception</text>
-                        <text x="345" y="145" class="node-subtext">Réseau Visuel</text>
-                    </g>
-
-                    <!-- 3. CONF -->
-                    <g class="node" id="node-CONF" onclick="selectModule('CONF')">
-                        <rect x="280" y="300" width="130" height="70" rx="10" class="node-rect node-core"/>
-                        <text x="345" y="335" class="node-text">🧭 Objectif</text>
-                        <text x="345" y="355" class="node-subtext">Directeur</text>
-                    </g>
-
-                    <!-- 4. WM -->
-                    <g class="node" id="node-WM" onclick="selectModule('WM')">
-                        <rect x="480" y="230" width="140" height="100" rx="10" class="node-rect node-core"/>
-                        <text x="550" y="265" class="node-text">🎯 Acteur</text>
-                        <text x="550" y="285" class="node-subtext">Planificateur</text>
-                        <text x="550" y="305" class="node-subtext">(Méthode CEM)</text>
-                    </g>
-
-                    <!-- 5. SIM -->
-                    <g class="node" id="node-SIM" onclick="selectModule('SIM')">
-                        <rect x="700" y="230" width="130" height="100" rx="10" class="node-rect node-sim"/>
-                        <text x="765" y="265" class="node-text">🧠 Modèle du</text>
-                        <text x="765" y="285" class="node-text">Monde</text>
-                        <text x="765" y="305" class="node-subtext">Simulateur JEPA</text>
-                    </g>
-
-                    <!-- 6. COST -->
-                    <g class="node" id="node-COST" onclick="selectModule('COST')">
-                        <rect x="680" y="410" width="150" height="70" rx="10" class="node-rect node-sim"/>
-                        <text x="755" y="440" class="node-text">⚖️ Critique</text>
-                        <text x="755" y="460" class="node-subtext">Évaluateur</text>
-                    </g>
-
-                    <!-- 7. MEM -->
-                    <g class="node" id="node-MEM" onclick="selectModule('MEM')">
-                        <rect x="650" y="550" width="180" height="70" rx="10" class="node-rect node-mem"/>
-                        <text x="740" y="585" class="node-text">💾 Replay Buffer</text>
-                        <text x="740" y="605" class="node-subtext">Mémoire (10k épisodes)</text>
-                    </g>
-                </svg>
-            </div>
-
-            <!-- RIGHT: Detail Panel -->
-            <div class="detail-panel" id="detail-panel">
-                <!-- Initial empty state -->
-                <div class="panel-placeholder" id="panel-placeholder">
-                    <div class="icon-bounce">👈</div>
-                    <h3>Explorez l'Architecture</h3>
-                    <p>Cliquez sur l'un des blocs du diagramme interactif pour découvrir ce qui se passe sous le capot de notre IA.</p>
-                </div>
-
-                <!-- Content state (hidden initially) -->
-                <div class="panel-content" id="panel-content" style="display: none;">
-                    <div class="panel-header">
-                        <div class="panel-icon-wrap">
-                            <span class="panel-icon" id="p-icon"></span>
-                        </div>
-                        <div class="panel-header-text">
-                            <h2 id="p-title">Titre</h2>
-                            <span class="panel-subtitle" id="p-subtitle">Sous-titre</span>
-                        </div>
-                    </div>
-
-                    <div class="panel-section">
-                        <h3 class="section-heading">🎓 Pour faire simple...</h3>
-                        <div class="concept-box">
-                            <p id="p-simple"></p>
-                        </div>
-                    </div>
-
-                    <div class="panel-section">
-                        <h3 class="section-heading">⚙️ Sous le capot</h3>
-                        <p id="p-tech"></p>
-                    </div>
-
-                    
-                    
-                    <div class="panel-section" id="p-deep-section" style="display: none;">
-                        <h3 class="section-heading">🔬 Deep Dive (PyTorch & Théorie)</h3>
-                        <div class="deep-box" id="p-deep"></div>
-                    </div>
-
-                    <div class="panel-section" id="p-math-section" style="display: none;">
-                        <h3 class="section-heading">📐 Équation Clé</h3>
-                        <div class="math-box" id="p-math"></div>
-                    </div>
-
-                    <div class="panel-section io-grid">
-                        <div class="io-box in-box">
-                            <span class="io-label">ENTRÉE</span>
-                            <span class="io-val" id="p-in"></span>
-                        </div>
-                        <div class="io-box out-box">
-                            <span class="io-label">SORTIE</span>
-                            <span class="io-val" id="p-out"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      </div>
+      <!-- CONF -->
+      <div class="recap-card">
+        <div class="rc-header"><span class="rc-icon"></span><h3>Configurateur</h3></div>
+        <div class="rc-content">
+          <p><strong>Modèle :</strong> Heuristique à seuils</p>
+          <p><strong>Théorie :</strong> Cortex Motivationnel</p>
+          <p><strong>But :</strong> Déterminer la priorité immédiate de survie.</p>
+          <p><strong>Fonctionnement :</strong> Alterne l'objectif (s_goal) entre la cible finale et la station de recharge en cas de batterie faible.</p>
         </div>
-    </section>
-
-    
-    <!-- ==================== RECAP SECTION ==================== -->
-    <section class="recap-section">
-        <h2 class="section-title">Récapitulatif des Modules</h2>
-        <p class="section-subtitle">Vue d'ensemble statique de l'architecture complète</p>
-
-        <div class="recap-grid">
-            <!-- ENV -->
-            <div class="recap-card">
-                <div class="rc-header"><span class="rc-icon">🌍</span><h3>Environnement</h3></div>
-                <div class="rc-content">
-                    <p><strong>Modèle :</strong> Procédural (Python)</p>
-                    <p><strong>Théorie :</strong> Processus de Décision Markovien (MDP)</p>
-                    <p><strong>But :</strong> Fournir un monde physique (Gridworld 10x10) avec murs et énergie.</p>
-                    <p><strong>Fonctionnement :</strong> Gère l'état caché et retourne une observation partielle 5x5 à l'agent.</p>
-                </div>
-            </div>
-            <!-- PERC -->
-            <div class="recap-card">
-                <div class="rc-header"><span class="rc-icon">👁️</span><h3>Perception</h3></div>
-                <div class="rc-content">
-                    <p><strong>Modèle :</strong> CNN (ResNet) / Encodeur Dual</p>
-                    <p><strong>Théorie :</strong> Extraction de features abstraites</p>
-                    <p><strong>But :</strong> Transformer les pixels bruts en Espace Latent sans effondrement.</p>
-                    <p><strong>Fonctionnement :</strong> Convertit l'image en vecteur `s_t`. Stabilisé par EMA (Target Encoder) et SIGReg.</p>
-                </div>
-            </div>
-            <!-- CONF -->
-            <div class="recap-card">
-                <div class="rc-header"><span class="rc-icon">🧭</span><h3>Configurateur</h3></div>
-                <div class="rc-content">
-                    <p><strong>Modèle :</strong> Heuristique à seuils</p>
-                    <p><strong>Théorie :</strong> Cortex Motivationnel</p>
-                    <p><strong>But :</strong> Déterminer la priorité immédiate de survie.</p>
-                    <p><strong>Fonctionnement :</strong> Alterne l'objectif (s_goal) entre la cible finale et la station de recharge en cas de batterie faible.</p>
-                </div>
-            </div>
-            <!-- WM / ACTOR -->
-            <div class="recap-card">
-                <div class="rc-header"><span class="rc-icon">🎯</span><h3>Acteur (CEM)</h3></div>
-                <div class="rc-content">
-                    <p><strong>Modèle :</strong> Model Predictive Control (MPC)</p>
-                    <p><strong>Théorie :</strong> Optimisation Cross-Entropy Method</p>
-                    <p><strong>But :</strong> Délibérer avant d'agir (Système 2).</p>
-                    <p><strong>Fonctionnement :</strong> Simule massivement des trajectoires dans le World Model et affine la distribution d'actions idéale.</p>
-                </div>
-            </div>
-            <!-- SIM / JEPA -->
-            <div class="recap-card">
-                <div class="rc-header"><span class="rc-icon">🧠</span><h3>Modèle du Monde</h3></div>
-                <div class="rc-content">
-                    <p><strong>Modèle :</strong> Réseau Neuronal (MLP séquentiel)</p>
-                    <p><strong>Théorie :</strong> Simulateur cognitif de transition JEPA</p>
-                    <p><strong>But :</strong> Imaginer les conséquences d'une action.</p>
-                    <p><strong>Fonctionnement :</strong> Prédit le futur latent en minimisant la distance L2 avec l'encodage réel de la future image.</p>
-                </div>
-            </div>
-            <!-- COST -->
-            <div class="recap-card">
-                <div class="rc-header"><span class="rc-icon">⚖️</span><h3>Critique</h3></div>
-                <div class="rc-content">
-                    <p><strong>Modèle :</strong> Réseau Neuronal + Distance L2</p>
-                    <p><strong>Théorie :</strong> Fonction de Valeur TD-Learning</p>
-                    <p><strong>But :</strong> Évaluer le danger et l'utilité d'un chemin.</p>
-                    <p><strong>Fonctionnement :</strong> Combine la Boussole (distance à l'objectif) et la mémoire de la douleur pour noter les futurs imaginés.</p>
-                </div>
-            </div>
+      </div>
+      <!-- WM / ACTOR -->
+      <div class="recap-card">
+        <div class="rc-header"><span class="rc-icon"></span><h3>Acteur (CEM)</h3></div>
+        <div class="rc-content">
+          <p><strong>Modèle :</strong> Model Predictive Control (MPC)</p>
+          <p><strong>Théorie :</strong> Optimisation Cross-Entropy Method</p>
+          <p><strong>But :</strong> Délibérer avant d'agir (Système 2).</p>
+          <p><strong>Fonctionnement :</strong> Simule massivement des trajectoires dans le World Model et affine la distribution d'actions idéale.</p>
         </div>
-    </section>
-
-    <!-- ==================== FLOW SECTION ==================== -->
-    <section class="flow-section">
-        <h2 class="section-title">L'Histoire d'une Décision</h2>
-        <p class="section-subtitle">Voici comment l'agent raisonne avant de faire le moindre pas.</p>
-
-        <div class="timeline">
-            <div class="timeline-item">
-                <div class="timeline-marker">1</div>
-                <div class="timeline-content">
-                    <h3>Je regarde</h3>
-                    <p>L'agent observe sa vision locale (murs, cible). La <strong>Perception</strong> traduit cette image en un code mathématique (l'espace latent).</p>
-                </div>
-            </div>
-            <div class="timeline-item">
-                <div class="timeline-marker">2</div>
-                <div class="timeline-content">
-                    <h3>Qu'est-ce qui est urgent ?</h3>
-                    <p>Le <strong>Configurateur</strong> regarde la batterie. Si elle est pleine, la cible est le point vert. Si elle est vide, la priorité absolue devient la station de recharge la plus proche.</p>
-                </div>
-            </div>
-            <div class="timeline-item">
-                <div class="timeline-marker">3</div>
-                <div class="timeline-content">
-                    <h3>J'imagine 500 avenirs</h3>
-                    <p>Sans bouger, l'<strong>Acteur</strong> génère 500 chemins aléatoires (ex: "droite, haut, droite..."). Le <strong>Modèle du Monde</strong> simule l'avenir et prédit la situation de l'agent à la fin de chaque chemin.</p>
-                </div>
-            </div>
-            <div class="timeline-item">
-                <div class="timeline-marker">4</div>
-                <div class="timeline-content">
-                    <h3>Je juge mes idées</h3>
-                    <p>Le <strong>Critique</strong> donne une note à chaque avenir imaginé. Il pénalise les scénarios où l'agent se cogne dans un mur, et récompense ceux qui s'approchent de la cible.</p>
-                </div>
-            </div>
-            <div class="timeline-item">
-                <div class="timeline-marker">5</div>
-                <div class="timeline-content">
-                    <h3>J'affine mon plan</h3>
-                    <p>L'Acteur garde les 50 meilleurs chemins, les mélange, et imagine 500 <em>nouvelles</em> variations autour de ces bonnes idées. Il répète ça 10 fois pour trouver le chemin parfait.</p>
-                </div>
-            </div>
-            <div class="timeline-item">
-                <div class="timeline-marker">6</div>
-                <div class="timeline-content">
-                    <h3>J'agis</h3>
-                    <p>L'agent exécute <strong>uniquement le tout premier pas</strong> de son plan parfait. Puis, il rouvre les yeux et recommence tout le processus depuis le début !</p>
-                </div>
-            </div>
+      </div>
+      <!-- SIM / JEPA -->
+      <div class="recap-card">
+        <div class="rc-header"><span class="rc-icon"></span><h3>Modèle du Monde</h3></div>
+        <div class="rc-content">
+          <p><strong>Modèle :</strong> Réseau Neuronal (MLP séquentiel)</p>
+          <p><strong>Théorie :</strong> Simulateur cognitif de transition JEPA</p>
+          <p><strong>But :</strong> Imaginer les conséquences d'une action.</p>
+          <p><strong>Fonctionnement :</strong> Prédit le futur latent en minimisant la distance L2 avec l'encodage réel de la future image.</p>
         </div>
-    </section>
-
-    <!-- ==================== FOOTER ==================== -->
-    
-    <!-- ==================== GLOSSARY SECTION ==================== -->
-    <section class="glossary-section">
-        <h2 class="section-title">📖 Glossaire Technique Avancé</h2>
-        <p class="section-subtitle">Définitions approfondies des concepts clés de l'Intelligence Autonome (LeCun, 2022-2025)</p>
-
-        <div class="glossary-grid">
-            <div class="glossary-item">
-                <h4>JEPA</h4>
-                <p><em>Joint-Embedding Predictive Architecture.</em> Architecture d'apprentissage auto-supervisé introduite par Yann LeCun. Contrairement aux modèles génératifs (LLM, Auto-encodeurs) qui tentent de reconstruire chaque pixel ou token, JEPA utilise un encodeur pour projeter la réalité dans un espace abstrait et tente de prédire uniquement l'<strong>état latent futur</strong>. Cela permet d'ignorer les détails imprévisibles de l'environnement (le bruit) et de réduire drastiquement la complexité calculatoire.</p>
-            </div>
-            
-            <div class="glossary-item">
-                <h4>Espace Latent (Latent Space)</h4>
-                <p>Représentation mathématique compressée (un vecteur de nombres, ex: $s_t \in \mathbb{R}^{128}$) générée par l'encodeur (Perception). Un espace latent bien structuré préserve la topologie de l'environnement réel : deux situations physiquement similaires auront des vecteurs proches. C'est dans cet espace de basse dimension que le <em>World Model</em> effectue toutes ses prédictions.</p>
-            </div>
-
-            <div class="glossary-item">
-                <h4>Latent Collapse (Effondrement Latent)</h4>
-                <p>Le problème majeur des architectures conjointes (Siamese Networks). Sans précaution, le réseau trouve une solution de facilité : projeter n'importe quelle image vers un vecteur constant (ex: des zéros). La perte (Loss) tombe à zéro, mais l'agent devient aveugle. Des techniques comme l'EMA ou SIGReg/VICReg sont obligatoires pour forcer l'encodeur à maintenir une variance (diversité) dans l'espace latent.</p>
-            </div>
-
-            <div class="glossary-item">
-                <h4>Système de Décision : Mode-1 vs Mode-2</h4>
-                <p>Concept tiré des neurosciences et formalisé par LeCun. Le <strong>Mode-1</strong> est réactif et instinctif : l'agent perçoit et agit instantanément via une politique (Policy) directe. Le <strong>Mode-2</strong> est délibératif : l'agent "s'arrête pour réfléchir", utilise son <em>World Model</em> pour simuler mentalement des futurs possibles, évalue les coûts de chaque trajectoire, et planifie son action. Votre agent opère en Mode-2.</p>
-            </div>
-
-            <div class="glossary-item">
-                <h4>CEM</h4>
-                <p><em>Cross-Entropy Method.</em> Puissant algorithme d'optimisation sans dérivée utilisé par l'Acteur lors de la planification (Mode-2). Le CEM génère des séquences d'actions aléatoires selon une distribution de probabilité, simule ces séquences, isole les $K$ meilleures (les "élites") selon le Critique, et met à jour sa distribution pour se concentrer sur ces trajectoires prometteuses à l'itération suivante.</p>
-            </div>
-
-            <div class="glossary-item">
-                <h4>MPC</h4>
-                <p><em>Model Predictive Control (Contrôle Prédictif à Horizon Fuyant).</em> Stratégie d'exécution où l'agent calcule un plan optimal sur un horizon de $H$ étapes futures, mais n'exécute <strong>que la toute première action</strong> $a_0$. Au pas de temps suivant, il perçoit la nouvelle réalité et recalcule un nouveau plan complet. Cela permet à l'agent de corriger ses erreurs de prédiction et de s'adapter aux imprévus.</p>
-            </div>
-
-            <div class="glossary-item">
-                <h4>TD-Learning & Réseau Critique</h4>
-                <p><em>Temporal Difference Learning.</em> Méthode d'apprentissage au cœur du module "Coût". Le Critique est un réseau de neurones ($V_\psi$) qui apprend à prédire la somme des récompenses/coûts futurs. Il se met à jour en comparant sa prédiction à l'instant $t$ avec la récompense réelle obtenue plus sa propre prédiction à l'instant $t+1$ (Équation de Bellman). Cela donne à l'agent une "intuition" du danger à long terme, lui permettant de s'éloigner temporairement de sa cible pour contourner un mur.</p>
-            </div>
-
-            <div class="glossary-item">
-                <h4>Configurateur</h4>
-                <p>Le module de supervision ("Cortex Préfrontal") de l'architecture de LeCun. Il ne prend pas d'actions physiques, mais module les objectifs de l'Acteur en fonction de l'état interne de l'agent. Par exemple, si l'énergie chute sous un seuil critique, le Configurateur modifie les poids $w$ de la fonction de coût pour que la survie (recharge) prenne le pas sur l'objectif principal.</p>
-            </div>
-
-            <div class="glossary-item">
-                <h4>EMA / Target Encoder</h4>
-                <p><em>Exponential Moving Average.</em> Méthode essentielle de stabilisation. Au lieu de comparer la prédiction du World Model à un encodeur qui change constamment, on utilise un réseau "Cible" dont les poids ($\bar{\theta}$) sont une moyenne glissante très lente des poids du réseau principal ($\theta$). Formule : $\bar{\theta} \leftarrow \tau\bar{\theta} + (1-\tau)\theta$ (avec $\tau \approx 0.99$).</p>
-            </div>
-
-            <div class="glossary-item">
-                <h4>SIGReg / VICReg</h4>
-                <p><em>Sketched Isotropic Gaussian / Variance-Invariance-Covariance Regularization.</em> Fonctions de perte (Loss) additionnelles. Elles forcent les neurones de l'espace latent à maintenir une variance minimale (pas de <em>Collapse</em>) et à décorréler leurs activations (Covariance nulle), assurant que chaque dimension du vecteur latent code une information unique et utile sur l'environnement.</p>
-            </div>
-
-            <div class="glossary-item">
-                <h4>EBM</h4>
-                <p><em>Energy-Based Model (Modèle Basé sur l'Énergie).</em> Cadre théorique unificateur de Yann LeCun. L'apprentissage ne consiste plus à maximiser une probabilité, mais à modeler une surface d'énergie spatiale : on creuse des "vallées" (énergie faible) pour les paires $(état, prédiction)$ compatibles et réalistes, et on crée des "montagnes" (énergie haute) pour les situations incohérentes.</p>
-            </div>
-
-            <div class="glossary-item">
-                <h4>Replay Buffer</h4>
-                <p>Base de données épisodique agissant comme l'hippocampe de l'agent. Elle stocke les transitions passées $(s_t, a_t, r_t, s_{t+1})$. Pendant l'entraînement, on échantillonne des batchs aléatoires depuis ce buffer. Cela brise la corrélation temporelle des données successives et permet d'entraîner le World Model et le Critique de manière stable ("Off-Policy").</p>
-            </div>
+      </div>
+      <!-- COST -->
+      <div class="recap-card">
+        <div class="rc-header"><span class="rc-icon"></span><h3>Critique</h3></div>
+        <div class="rc-content">
+          <p><strong>Modèle :</strong> Réseau Neuronal + Distance L2</p>
+          <p><strong>Théorie :</strong> Fonction de Valeur TD-Learning</p>
+          <p><strong>But :</strong> Évaluer le danger et l'utilité d'un chemin.</p>
+          <p><strong>Fonctionnement :</strong> Combine la Boussole (distance à l'objectif) et la mémoire de la douleur pour noter les futurs imaginés.</p>
         </div>
-    </section>
+      </div>
+    </div>
+  </section>
 
-    <footer>
-        <p>Projet d'Intelligence Artificielle Autonome (Deep-JEPA) - 2026</p>
-    </footer>
+  <!-- ==================== FLOW SECTION ==================== -->
+  <section class="flow-section">
+    <h2 class="section-title">L'Histoire d'une Décision</h2>
+    <p class="section-subtitle">Voici comment l'agent raisonne avant de faire le moindre pas.</p>
 
-    <script src="data.js"></script>
-    <script src="app.js"></script>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-marker">1</div>
+        <div class="timeline-content">
+          <h3>Je regarde</h3>
+          <p>L'agent observe sa vision locale (murs, cible). La <strong>Perception</strong> traduit cette image en un code mathématique (l'espace latent).</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-marker">2</div>
+        <div class="timeline-content">
+          <h3>Qu'est-ce qui est urgent ?</h3>
+          <p>Le <strong>Configurateur</strong> regarde la batterie. Si elle est pleine, la cible est le point vert. Si elle est vide, la priorité absolue devient la station de recharge la plus proche.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-marker">3</div>
+        <div class="timeline-content">
+          <h3>J'imagine 500 avenirs</h3>
+          <p>Sans bouger, l'<strong>Acteur</strong> génère 500 chemins aléatoires (ex: "droite, haut, droite..."). Le <strong>Modèle du Monde</strong> simule l'avenir et prédit la situation de l'agent à la fin de chaque chemin.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-marker">4</div>
+        <div class="timeline-content">
+          <h3>Je juge mes idées</h3>
+          <p>Le <strong>Critique</strong> donne une note à chaque avenir imaginé. Il pénalise les scénarios où l'agent se cogne dans un mur, et récompense ceux qui s'approchent de la cible.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-marker">5</div>
+        <div class="timeline-content">
+          <h3>J'affine mon plan</h3>
+          <p>L'Acteur garde les 50 meilleurs chemins, les mélange, et imagine 500 <em>nouvelles</em> variations autour de ces bonnes idées. Il répète ça 10 fois pour trouver le chemin parfait.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-marker">6</div>
+        <div class="timeline-content">
+          <h3>J'agis</h3>
+          <p>L'agent exécute <strong>uniquement le tout premier pas</strong> de son plan parfait. Puis, il rouvre les yeux et recommence tout le processus depuis le début !</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FOOTER ==================== -->
+  
+  <!-- ==================== GLOSSARY SECTION ==================== -->
+  <section class="glossary-section">
+    <h2 class="section-title"> Glossaire Technique Avancé</h2>
+    <p class="section-subtitle">Définitions approfondies des concepts clés de l'Intelligence Autonome (LeCun, 2022-2025)</p>
+
+    <div class="glossary-grid">
+      <div class="glossary-item">
+        <h4>JEPA</h4>
+        <p><em>Joint-Embedding Predictive Architecture.</em> Architecture d'apprentissage auto-supervisé introduite par Yann LeCun. Contrairement aux modèles génératifs (LLM, Auto-encodeurs) qui tentent de reconstruire chaque pixel ou token, JEPA utilise un encodeur pour projeter la réalité dans un espace abstrait et tente de prédire uniquement l'<strong>état latent futur</strong>. Cela permet d'ignorer les détails imprévisibles de l'environnement (le bruit) et de réduire drastiquement la complexité calculatoire.</p>
+      </div>
+      
+      <div class="glossary-item">
+        <h4>Espace Latent (Latent Space)</h4>
+        <p>Représentation mathématique compressée (un vecteur de nombres, ex: $s_t \in \mathbb{R}^{128}$) générée par l'encodeur (Perception). Un espace latent bien structuré préserve la topologie de l'environnement réel : deux situations physiquement similaires auront des vecteurs proches. C'est dans cet espace de basse dimension que le <em>World Model</em> effectue toutes ses prédictions.</p>
+      </div>
+
+      <div class="glossary-item">
+        <h4>Latent Collapse (Effondrement Latent)</h4>
+        <p>Le problème majeur des architectures conjointes (Siamese Networks). Sans précaution, le réseau trouve une solution de facilité : projeter n'importe quelle image vers un vecteur constant (ex: des zéros). La perte (Loss) tombe à zéro, mais l'agent devient aveugle. Des techniques comme l'EMA ou SIGReg/VICReg sont obligatoires pour forcer l'encodeur à maintenir une variance (diversité) dans l'espace latent.</p>
+      </div>
+
+      <div class="glossary-item">
+        <h4>Système de Décision : Mode-1 vs Mode-2</h4>
+        <p>Concept tiré des neurosciences et formalisé par LeCun. Le <strong>Mode-1</strong> est réactif et instinctif : l'agent perçoit et agit instantanément via une politique (Policy) directe. Le <strong>Mode-2</strong> est délibératif : l'agent "s'arrête pour réfléchir", utilise son <em>World Model</em> pour simuler mentalement des futurs possibles, évalue les coûts de chaque trajectoire, et planifie son action. Votre agent opère en Mode-2.</p>
+      </div>
+
+      <div class="glossary-item">
+        <h4>CEM</h4>
+        <p><em>Cross-Entropy Method.</em> Puissant algorithme d'optimisation sans dérivée utilisé par l'Acteur lors de la planification (Mode-2). Le CEM génère des séquences d'actions aléatoires selon une distribution de probabilité, simule ces séquences, isole les $K$ meilleures (les "élites") selon le Critique, et met à jour sa distribution pour se concentrer sur ces trajectoires prometteuses à l'itération suivante.</p>
+      </div>
+
+      <div class="glossary-item">
+        <h4>MPC</h4>
+        <p><em>Model Predictive Control (Contrôle Prédictif à Horizon Fuyant).</em> Stratégie d'exécution où l'agent calcule un plan optimal sur un horizon de $H$ étapes futures, mais n'exécute <strong>que la toute première action</strong> $a_0$. Au pas de temps suivant, il perçoit la nouvelle réalité et recalcule un nouveau plan complet. Cela permet à l'agent de corriger ses erreurs de prédiction et de s'adapter aux imprévus.</p>
+      </div>
+
+      <div class="glossary-item">
+        <h4>TD-Learning & Réseau Critique</h4>
+        <p><em>Temporal Difference Learning.</em> Méthode d'apprentissage au cœur du module "Coût". Le Critique est un réseau de neurones ($V_\psi$) qui apprend à prédire la somme des récompenses/coûts futurs. Il se met à jour en comparant sa prédiction à l'instant $t$ avec la récompense réelle obtenue plus sa propre prédiction à l'instant $t+1$ (Équation de Bellman). Cela donne à l'agent une "intuition" du danger à long terme, lui permettant de s'éloigner temporairement de sa cible pour contourner un mur.</p>
+      </div>
+
+      <div class="glossary-item">
+        <h4>Configurateur</h4>
+        <p>Le module de supervision ("Cortex Préfrontal") de l'architecture de LeCun. Il ne prend pas d'actions physiques, mais module les objectifs de l'Acteur en fonction de l'état interne de l'agent. Par exemple, si l'énergie chute sous un seuil critique, le Configurateur modifie les poids $w$ de la fonction de coût pour que la survie (recharge) prenne le pas sur l'objectif principal.</p>
+      </div>
+
+      <div class="glossary-item">
+        <h4>EMA / Target Encoder</h4>
+        <p><em>Exponential Moving Average.</em> Méthode essentielle de stabilisation. Au lieu de comparer la prédiction du World Model à un encodeur qui change constamment, on utilise un réseau "Cible" dont les poids ($\bar{\theta}$) sont une moyenne glissante très lente des poids du réseau principal ($\theta$). Formule : $\bar{\theta} \leftarrow \tau\bar{\theta} + (1-\tau)\theta$ (avec $\tau \approx 0.99$).</p>
+      </div>
+
+      <div class="glossary-item">
+        <h4>SIGReg / VICReg</h4>
+        <p><em>Sketched Isotropic Gaussian / Variance-Invariance-Covariance Regularization.</em> Fonctions de perte (Loss) additionnelles. Elles forcent les neurones de l'espace latent à maintenir une variance minimale (pas de <em>Collapse</em>) et à décorréler leurs activations (Covariance nulle), assurant que chaque dimension du vecteur latent code une information unique et utile sur l'environnement.</p>
+      </div>
+
+      <div class="glossary-item">
+        <h4>EBM</h4>
+        <p><em>Energy-Based Model (Modèle Basé sur l'Énergie).</em> Cadre théorique unificateur de Yann LeCun. L'apprentissage ne consiste plus à maximiser une probabilité, mais à modeler une surface d'énergie spatiale : on creuse des "vallées" (énergie faible) pour les paires $(état, prédiction)$ compatibles et réalistes, et on crée des "montagnes" (énergie haute) pour les situations incohérentes.</p>
+      </div>
+
+      <div class="glossary-item">
+        <h4>Replay Buffer</h4>
+        <p>Base de données épisodique agissant comme l'hippocampe de l'agent. Elle stocke les transitions passées $(s_t, a_t, r_t, s_{t+1})$. Pendant l'entraînement, on échantillonne des batchs aléatoires depuis ce buffer. Cela brise la corrélation temporelle des données successives et permet d'entraîner le World Model et le Critique de manière stable ("Off-Policy").</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Projet d'Intelligence Artificielle Autonome (Deep-JEPA) - 2026</p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

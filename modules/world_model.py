@@ -45,12 +45,19 @@ class WorldModel(nn.Module):
             nn.Conv2d(hidden_dim, latent_dim, kernel_size=3, padding=1)
         )
         
-        self.pred_proj = nn.Sequential(
-            nn.Conv2d(self.latent_dim, self.proj_dim, kernel_size=1),
-            nn.BatchNorm2d(self.proj_dim),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(self.proj_dim, self.proj_dim, kernel_size=1)
-        )
+        # Décodeur d'agent pour forcer la représentation latente à suivre l'agent
+        self.agent_decoder = nn.Conv2d(latent_dim, 1, kernel_size=1)
+        
+
+        
+    def decode_agent(self, s):
+        # s: [B, C, H, W]
+        # returns: [B, 1, H, W] probabilités d'agent
+        if len(s.shape) == 5:
+            B, T, C, H, W = s.shape
+            s = s.view(B*T, C, H, W)
+            return torch.sigmoid(self.agent_decoder(s)).view(B, T, 1, H, W)
+        return torch.sigmoid(self.agent_decoder(s))
         
     def init_hidden(self, batch_size, device):
         return torch.zeros(batch_size, self.hidden_dim, self.spatial_size, self.spatial_size, device=device)
@@ -90,7 +97,7 @@ class WorldModel(nn.Module):
         
         return s_next, h_next
         
-    def forward_seq(self, s_0, a_seq, h_0=None, project=False):
+    def forward_seq(self, s_0, a_seq, h_0=None):
         B, T, _ = a_seq.size()
         if h_0 is None:
             h_0 = self.init_hidden(B, s_0.device)
@@ -109,11 +116,4 @@ class WorldModel(nn.Module):
             
             s_t = s_next
             
-        s_preds_cat = torch.cat(s_preds, dim=1)
-        if project:
-            # s_preds_cat is [B, T, C, H, W], pred_proj expects 4D
-            B, T, C, H, W = s_preds_cat.shape
-            s_preds_flat = s_preds_cat.view(B*T, C, H, W)
-            s_preds_proj = self.pred_proj(s_preds_flat).view(B, T, self.proj_dim, H, W)
-            return s_preds_proj, torch.cat(h_seq, dim=1)
-        return s_preds_cat, torch.cat(h_seq, dim=1)
+        return torch.cat(s_preds, dim=1), torch.cat(h_seq, dim=1)

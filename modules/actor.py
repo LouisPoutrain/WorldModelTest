@@ -44,13 +44,23 @@ class Actor(torch.nn.Module):
                 a_t_sim = actions_onehot[:, t, :]
                 s_sim, h_sim = world_model.forward_step(s_sim, a_t_sim, h_sim)
                 
-                # Distance to goal (MSE over C,H,W)
-                dist_to_goal = torch.sum((s_sim - s_goal)**2, dim=[-1, -2, -3])
+                # Distance to goal
+                if cost is not None:
+                    dist_to_goal = cost(s_sim, s_goal)
+                else:
+                    # Manhattan distance using the agent_decoder
+                    agent_prob = world_model.decode_agent(s_sim)
+                    B_sim = agent_prob.shape[0]
+                    agent_idx = agent_prob.view(B_sim, -1).argmax(dim=1)
+                    pred_y, pred_x = agent_idx // 10, agent_idx % 10
+                    
+                    goal_prob = world_model.decode_agent(s_goal)
+                    goal_idx = goal_prob.view(s_goal.shape[0], -1).argmax(dim=1)
+                    goal_y, goal_x = goal_idx // 10, goal_idx % 10
+                    
+                    dist_to_goal = torch.abs(pred_y - goal_y) + torch.abs(pred_x - goal_x)
+                    
                 total_costs += w_goal * dist_to_goal
-                
-                if self.w_critic > 0.0 and cost is not None:
-                    critic_cost = cost(s_sim).squeeze(-1)
-                    total_costs += self.w_critic * critic_cost
 
             costs_np = total_costs.detach().cpu().numpy()
             elite_indices = torch.tensor(costs_np.argsort()[:self.elite_size], device=device)

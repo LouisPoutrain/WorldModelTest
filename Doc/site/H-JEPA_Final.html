@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>H-JEPA Finale (82% ID) — WorldModelTest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+
+  <!-- NAV BAR -->
+  <nav class="nav-bar" style="display:flex;justify-content:center;gap:20px;padding:15px 20px;border-bottom:1px solid var(--card-border);background:rgba(0,0,0,0.3);flex-wrap:wrap;">
+    <a href="Archi.html" style="color:#94a3b8;text-decoration:none;font-size:0.95rem;padding:8px 18px;border-radius:8px;font-family:Inter,sans-serif;font-weight:500;transition:all 0.2s;" onmouseover="this.style.background='rgba(56,189,248,0.1)';this.style.color='#38bdf8'" onmouseout="this.style.background='';this.style.color='#94a3b8'">V1</a>
+    <a href="Classes.html" style="color:#94a3b8;text-decoration:none;font-size:0.95rem;padding:8px 18px;border-radius:8px;font-family:Inter,sans-serif;font-weight:500;transition:all 0.2s;" onmouseover="this.style.background='rgba(56,189,248,0.1)';this.style.color='#38bdf8'" onmouseout="this.style.background='';this.style.color='#94a3b8'">Diagramme de Classes</a>
+    <a href="H-JEPA_Final.html" style="color:var(--primary);background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);text-decoration:none;font-size:0.95rem;padding:8px 18px;border-radius:8px;font-family:Inter,sans-serif;font-weight:500;">V3</a>
+  </nav>
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+      <span class="hero-badge"> 82.0% Success Rate (In-Distribution)</span>
+      <h1>V3 : H-JEPA</h1>
+      <p class="hero-subtitle">
+        La solution au <strong>Piège de la distance de Manhattan</strong>.
+        <br>Un modèle hybride alliant la puissance cognitive de JEPA et la rigueur de l'algorithme A*.
+      </p>
+    </div>
+  </header>
+
+  <!-- ==================== INTRO SECTION ==================== -->
+  <section class="intro-section">
+    <div class="intro-card">
+      <h2> Le Piège de Manhattan</h2>
+      <p>
+        Avant, l'agent bloquait à <strong>57%</strong>. Pourquoi ? Contourner un mur augmentait temporairement la distance mathématique vers la cible lointaine. Le planificateur CEM préférait s'encastrer dans le mur indéfiniment plutôt que de reculer.
+      </p>
+    </div>
+    <div class="intro-card">
+      <h2> La Solution (Lookahead=1)</h2>
+      <p>
+        Au lieu de viser la cible finale, l'agent vise le <strong>waypoint immédiat</strong> calculé par A*. Comme la cible est toujours adjacente (T=1), il n'y a plus de compromis géométrique impossible à résoudre.
+      </p>
+    </div>
+    <div class="intro-card">
+      <h2> Le Résultat (82.0%)</h2>
+      <p>
+        L'agent suit parfaitement les chemins complexes. Pour une IA totalement autonome (Type LeCun), cette limitation serait levée en entraînant un réseau <em>Critique</em> (Q-learning) capable de comprendre l'utilité des détours.
+      </p>
+    </div>
+  </section>
+
+  <!-- ==================== MAIN ARCHITECTURE ==================== -->
+  <section class="arch-section">
+    <h2 class="section-title">Le Flux d'Exécution Final</h2>
+    <p class="section-subtitle">Cliquez sur un module du schéma pour comprendre son rôle technique.</p>
+
+    <div class="arch-layout">
+      <!-- LEFT: SVG Diagram -->
+      <div class="diagram-panel">
+        <svg viewBox="0 0 900 650" id="arch-svg" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+            </marker>
+            <marker id="arrow-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8"/>
+            </marker>
+          </defs>
+
+          <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#1e293b" stroke-width="1" opacity="0.5"/>
+          </pattern>
+          <rect width="100%" height="100%" fill="url(#grid)" rx="12"/>
+
+          <!-- Background Zones -->
+          <rect x="30" y="30" width="180" height="130" rx="12" class="zone-rect"/>
+          <text x="120" y="55" class="zone-title" text-anchor="middle">ENVIRONNEMENT</text>
+
+          <rect x="30" y="200" width="180" height="400" rx="12" class="zone-rect"/>
+          <text x="120" y="225" class="zone-title" text-anchor="middle">A* MACROPLANNER</text>
+
+          <rect x="240" y="30" width="630" height="570" rx="16" class="zone-rect"/>
+          <text x="555" y="55" class="zone-title" text-anchor="middle">AGENT H-JEPA (T=1)</text>
+
+          <rect x="460" y="150" width="400" height="430" rx="12" class="zone-rect-cem"/>
+          <text x="660" y="175" class="zone-title-cem" text-anchor="middle"> PLANIFICATEUR CEM</text>
+
+
+          <!-- CONNECTIONS -->
+          <!-- Env to Percept -->
+          <g class="conn-group" data-src="node-ENV" data-dst="node-PERC">
+            <path class="conn-line" d="M 190 105 L 235 105 L 235 155 L 275 155" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="235" y="100" text-anchor="middle">Vision (x_t)</text>
+          </g>
+          
+          <!-- Env to AStar -->
+          <g class="conn-group" data-src="node-ENV" data-dst="node-ASTAR">
+            <path class="conn-line" d="M 120 140 L 120 245" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="130" y="195" text-anchor="start">Grille Complète</text>
+          </g>
+
+          <!-- AStar to WP -->
+          <g class="conn-group" data-src="node-ASTAR" data-dst="node-WP">
+            <path class="conn-line" d="M 120 320 L 120 385" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="130" y="355" text-anchor="start">Chemin</text>
+          </g>
+
+          <!-- WP to TargetObs -->
+          <g class="conn-group" data-src="node-WP" data-dst="node-TOBS">
+            <path class="conn-line" d="M 120 460 L 120 505" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="130" y="485" text-anchor="start">Lookahead=1</text>
+          </g>
+
+          <!-- TargetObs to Percept -->
+          <g class="conn-group" data-src="node-TOBS" data-dst="node-PERC">
+            <path class="conn-line" d="M 190 545 L 350 545 L 350 195" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="360" y="400" text-anchor="start">x_waypoint</text>
+          </g>
+
+          <!-- Percept to Act -->
+          <g class="conn-group" data-src="node-PERC" data-dst="node-ACT">
+            <path class="conn-line" d="M 420 155 L 570 155 L 570 195" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="495" y="145" text-anchor="middle">s_t & s_waypoint</text>
+          </g>
+
+          <!-- Act to Sim -->
+          <g class="conn-group" data-src="node-ACT" data-dst="node-SIM">
+            <path class="conn-line" d="M 640 235 L 695 235" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="670" y="225" text-anchor="middle">a_t</text>
+          </g>
+
+          <!-- Sim to WM -->
+          <g class="conn-group" data-src="node-SIM" data-dst="node-WM">
+            <path class="conn-line" d="M 770 270 L 770 355" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="780" y="315" text-anchor="start">a_sim</text>
+          </g>
+          
+          <!-- WM to Cost -->
+          <g class="conn-group" data-src="node-WM" data-dst="node-COST">
+            <path class="conn-line" d="M 700 395 L 645 395" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="672" y="385" text-anchor="middle">s_{t+1}</text>
+          </g>
+
+          <!-- Cost to Eval -->
+          <g class="conn-group" data-src="node-COST" data-dst="node-EVAL">
+            <path class="conn-line" d="M 570 430 L 570 475" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="580" y="455" text-anchor="start">Dist. Manhattan</text>
+          </g>
+
+          <!-- Eval to Act -->
+          <g class="conn-group" data-src="node-EVAL" data-dst="node-ACT">
+            <path class="conn-line" d="M 500 515 L 480 515 L 480 235 L 495 235" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text" x="470" y="375" text-anchor="end">Élites</text>
+          </g>
+
+          <!-- Eval to Env -->
+          <g class="conn-group" data-src="node-EVAL" data-dst="node-ENV">
+            <path class="conn-line conn-main" d="M 570 550 L 570 615 L 20 615 L 20 105 L 45 105" marker-end="url(#arrow-gray)"/>
+            <text class="conn-text conn-main-text" x="295" y="605" text-anchor="middle">Meilleure Action Choisie</text>
+          </g>
+
+          <!-- NODES -->
+          <!-- Env -->
+          <g class="node" id="node-ENV" onclick="showNode('ENV')">
+            <rect x="50" y="70" width="140" height="70" rx="10" class="node-rect node-env"/>
+            <text x="120" y="105" class="node-text" text-anchor="middle"> Environnement</text>
+            <text x="120" y="125" class="node-subtext" text-anchor="middle">Gridworld 10x10</text>
+          </g>
+
+          <!-- AStar -->
+          <g class="node" id="node-ASTAR" onclick="showNode('ASTAR')">
+            <rect x="50" y="250" width="140" height="70" rx="10" class="node-rect node-core"/>
+            <text x="120" y="285" class="node-text" text-anchor="middle"> A* Algo</text>
+            <text x="120" y="305" class="node-subtext" text-anchor="middle">Pathfinding</text>
+          </g>
+
+          <!-- WP -->
+          <g class="node" id="node-WP" onclick="showNode('WP')">
+            <rect x="50" y="390" width="140" height="70" rx="10" class="node-rect node-core"/>
+            <text x="120" y="425" class="node-text" text-anchor="middle"> Waypoint</text>
+            <text x="120" y="445" class="node-subtext" text-anchor="middle">Cible Intermédiaire</text>
+          </g>
+
+          <!-- TargetObs -->
+          <g class="node" id="node-TOBS" onclick="showNode('TOBS')">
+            <rect x="50" y="510" width="140" height="70" rx="10" class="node-rect node-core"/>
+            <text x="120" y="545" class="node-text" text-anchor="middle"> Obs. Cible</text>
+            <text x="120" y="565" class="node-subtext" text-anchor="middle">Image Synthétique</text>
+          </g>
+
+          <!-- Percept -->
+          <g class="node" id="node-PERC" onclick="showNode('PERC')">
+            <rect x="280" y="120" width="140" height="70" rx="10" class="node-rect node-core"/>
+            <text x="350" y="155" class="node-text" text-anchor="middle"> Perception</text>
+            <text x="350" y="175" class="node-subtext" text-anchor="middle">Encodeur (CNN)</text>
+          </g>
+
+          <!-- CEM Actor -->
+          <g class="node" id="node-ACT" onclick="showNode('ACT')">
+            <rect x="500" y="200" width="140" height="70" rx="10" class="node-rect node-core"/>
+            <text x="570" y="235" class="node-text" text-anchor="middle"> CEM Actor</text>
+            <text x="570" y="255" class="node-subtext" text-anchor="middle">Init. Séquences</text>
+          </g>
+
+          <!-- Simulation -->
+          <g class="node" id="node-SIM" onclick="showNode('SIM')">
+            <rect x="700" y="200" width="140" height="70" rx="10" class="node-rect node-sim"/>
+            <text x="770" y="235" class="node-text" text-anchor="middle"> Simulation</text>
+            <text x="770" y="255" class="node-subtext" text-anchor="middle">Prep OneHot</text>
+          </g>
+
+          <!-- World Model -->
+          <g class="node" id="node-WM" onclick="showNode('WM')">
+            <rect x="700" y="360" width="140" height="70" rx="10" class="node-rect node-sim"/>
+            <text x="770" y="395" class="node-text" text-anchor="middle"> World Model</text>
+            <text x="770" y="415" class="node-subtext" text-anchor="middle">Réseau ConvGRU</text>
+          </g>
+
+          <!-- Cost Function -->
+          <g class="node" id="node-COST" onclick="showNode('COST')">
+            <rect x="500" y="360" width="140" height="70" rx="10" class="node-rect node-sim"/>
+            <text x="570" y="395" class="node-text" text-anchor="middle"> Fonction Coût</text>
+            <text x="570" y="415" class="node-subtext" text-anchor="middle">Manhattan L2</text>
+          </g>
+
+          <!-- Evaluation -->
+          <g class="node" id="node-EVAL" onclick="showNode('EVAL')">
+            <rect x="500" y="480" width="140" height="70" rx="10" class="node-rect node-core"/>
+            <text x="570" y="515" class="node-text" text-anchor="middle"> Évaluation</text>
+            <text x="570" y="535" class="node-subtext" text-anchor="middle">Sélection Élites</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- RIGHT: Detail Panel -->
+      <div class="detail-panel" id="detail-panel">
+        <div class="panel-placeholder" id="panel-placeholder">
+          <div class="icon-bounce"></div>
+          <h3>Explorez l'Architecture</h3>
+          <p>Cliquez sur l'un des blocs du diagramme interactif pour découvrir ce qui se passe sous le capot de l'agent final.</p>
+        </div>
+
+        <div class="panel-content" id="panel-content" style="display: none;">
+          <div class="panel-header">
+            <div class="panel-icon-wrap">
+              <span class="panel-icon" id="p-icon"></span>
+            </div>
+            <div class="panel-header-text">
+              <h2 id="p-title">Titre</h2>
+              <span class="panel-subtitle" id="p-subtitle">Sous-titre</span>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <h3 class="section-heading"> Pour faire simple...</h3>
+            <div class="concept-box">
+              <p id="p-simple"></p>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <h3 class="section-heading"> Sous le capot</h3>
+            <p id="p-tech"></p>
+          </div>
+          
+          <div class="panel-section" id="p-deep-section" style="display: none;">
+            <h3 class="section-heading"> Deep Dive (PyTorch & Théorie)</h3>
+            <div class="deep-box" id="p-deep"></div>
+          </div>
+
+          <div class="panel-section" id="p-math-section" style="display: none;">
+            <h3 class="section-heading"> Équation Clé</h3>
+            <div class="math-box" id="p-math"></div>
+          </div>
+
+          <div class="panel-section io-grid">
+            <div class="io-box in-box">
+              <span class="io-label">ENTRÉE</span>
+              <span class="io-val" id="p-in"></span>
+            </div>
+            <div class="io-box out-box">
+              <span class="io-label">SORTIE</span>
+              <span class="io-val" id="p-out"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== RECAP SECTION ==================== -->
+  <section class="recap-section">
+    <h2 class="section-title">Récapitulatif des Modules Finaux</h2>
+    <p class="section-subtitle">Vue d'ensemble de la pipeline validée (82% Succès)</p>
+
+    <div class="recap-grid">
+      <div class="recap-card">
+        <div class="rc-header"><span class="rc-icon"></span><h3>Environnement</h3></div>
+        <div class="rc-content">
+          <p><strong>Modèle :</strong> Pygame / NumPy</p>
+          <p><strong>Rôle :</strong> Monde réel caché.</p>
+          <p><strong>Changement :</strong> Aucune modification. L'agent ne reçoit toujours qu'une vision 5x5.</p>
+        </div>
+      </div>
+      <div class="recap-card">
+        <div class="rc-header"><span class="rc-icon"></span><h3>A* MacroPlanner</h3></div>
+        <div class="rc-content">
+          <p><strong>Modèle :</strong> Algorithme A*</p>
+          <p><strong>Rôle :</strong> Fournit une trajectoire globale optimale (triche globale) pour guider le World Model.</p>
+        </div>
+      </div>
+      <div class="recap-card">
+        <div class="rc-header"><span class="rc-icon"></span><h3>Waypoint (Lookahead=1)</h3></div>
+        <div class="rc-content">
+          <p><strong>Modèle :</strong> Sélection d'index</p>
+          <p><strong>Rôle :</strong> La clé de voûte ! Empêche l'agent de bloquer dans des minimums locaux de Manhattan.</p>
+        </div>
+      </div>
+      <div class="recap-card">
+        <div class="rc-header"><span class="rc-icon"></span><h3>Observation Cible</h3></div>
+        <div class="rc-content">
+          <p><strong>Modèle :</strong> Génération Synthétique</p>
+          <p><strong>Rôle :</strong> Transforme les coordonnées du Waypoint en une fausse image (vision) de la cible.</p>
+        </div>
+      </div>
+      <div class="recap-card">
+        <div class="rc-header"><span class="rc-icon"></span><h3>Perception</h3></div>
+        <div class="rc-content">
+          <p><strong>Modèle :</strong> Encodeur CNN</p>
+          <p><strong>Rôle :</strong> Compresse la vision actuelle ($x_t$) et l'image synthétique du Waypoint ($x_{waypoint}$) en $s_t$.</p>
+        </div>
+      </div>
+      <div class="recap-card">
+        <div class="rc-header"><span class="rc-icon"></span><h3>CEM Actor (T=1)</h3></div>
+        <div class="rc-content">
+          <p><strong>Modèle :</strong> Optimisation CEM</p>
+          <p><strong>Rôle :</strong> Modifié pour ne tester qu'un seul pas dans le futur (T=1), générant une planification massive à très court terme.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FLOW SECTION ==================== -->
+  <section class="flow-section">
+    <h2 class="section-title">Le Flux H-JEPA T=1</h2>
+    <p class="section-subtitle">Pourquoi l'agent réussit-il à contourner les murs à 82% ?</p>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-marker">1</div>
+        <div class="timeline-content">
+          <h3>Le MacroPlanner intervient</h3>
+          <p>L'algorithme A* observe secrètement la grille complète et calcule le chemin parfait jusqu'à la fin.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-marker">2</div>
+        <div class="timeline-content">
+          <h3>Myopie contrôlée (Lookahead=1)</h3>
+          <p>On refuse de donner la cible finale à l'agent. On lui donne <strong>uniquement la case immédiatement adjacente</strong> du chemin A*. C'est le waypoint.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-marker">3</div>
+        <div class="timeline-content">
+          <h3>Génération d'images</h3>
+          <p>On fabrique une fausse "image" 5x5 ($x_{waypoint}$) qui représente ce que l'agent devrait voir s'il était sur ce waypoint. Cette image est encodée par la <strong>Perception</strong>.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-marker">4</div>
+        <div class="timeline-content">
+          <h3>Explosion combinatoire (T=1)</h3>
+          <p>Le <strong>CEM Actor</strong>, bridé à un horizon de 1, génère 1024 actions (Haut, Bas, Gauche, Droite). Le <strong>World Model</strong> prédit les 1024 états latents associés.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-marker">5</div>
+        <div class="timeline-content">
+          <h3>Victoire de Manhattan</h3>
+          <p>La <strong>Fonction de Coût</strong> n'a plus à gérer des murs lointains. La distance de Manhattan jusqu'à une case adjacente est toujours de 1 ou 0. Les collisions sont parfaitement évitées et l'action correcte émerge comme évidente pour l'<strong>Évaluateur</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== GLOSSARY SECTION ==================== -->
+  <section class="glossary-section">
+    <h2 class="section-title"> Glossaire H-JEPA</h2>
+    <div class="glossary-grid">
+      <div class="glossary-item">
+        <h4>H-JEPA (Hybrid JEPA)</h4>
+        <p>Notre version modifiée où la planification abstraite (World Model) est contrainte par un pathfinder global (A*). Cela permet de court-circuiter le besoin d'entraîner un Critique lourd par RL pour les décisions à long terme.</p>
+      </div>
+      
+      <div class="glossary-item">
+        <h4>Le Piège de Manhattan</h4>
+        <p>Problème mathématique où contourner un obstacle augmente temporairement la distance euclidienne ou Manhattan vers l'objectif à vol d'oiseau. Sans réseau Critique pour lui dire que ce détour est bon, l'agent choisit le mur.</p>
+      </div>
+
+      <div class="glossary-item">
+        <h4>Horizon (T=1)</h4>
+        <p>La profondeur de la simulation dans le World Model. En réduisant T de 5 à 1, l'agent ne simule plus des séquences de 5 actions, mais explore massivement toutes les options à 1 pas.</p>
+      </div>
+
+      <div class="glossary-item">
+        <h4>Waypoint</h4>
+        <p>Coordonnée relais générée par le MacroPlanner. Dans notre version (Lookahead=1), ce waypoint est toujours à distance +1 de l'agent.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Projet d'Intelligence Artificielle Autonome (Deep-JEPA) - 2026</p>
+  </footer>
+
+  <script>
+    const nodeData = {
+      'ENV': {
+        icon: '',
+        title: 'Environnement Physique',
+        subtitle: 'GridWorld 10x10',
+        simple: "C'est la grille physique réelle, qui cache des murs, des impasses, et la cible. L'agent ne reçoit qu'un petit carré de 5x5 pixels autour de lui (vision locale).",
+        tech: "Environnement Gym-like qui met à jour la position de l'agent si la collision renvoie False. Le vrai layout global y est stocké secrètement.",
+        deep: "<ul><li><strong>Rendu visuel :</strong> Tensor NumPy binarisé.</li><li><strong>Step :</strong> <code>obs, reward, done, info = env.step(action)</code></li></ul>",
+        input: "Meilleure action a_t",
+        output: "Observation partielle (x_t)"
+      },
+      'ASTAR': {
+        icon: '',
+        title: 'A* MacroPlanner',
+        subtitle: 'L\'Omniscient',
+        simple: "Il triche ! Il regarde la grille physique entière (vue de haut) et trace le chemin mathématiquement parfait jusqu'à la fin. Sans lui, notre agent se perdrait car il est myope.",
+        tech: "Algorithme de pathfinding déterministe. Calcule le plus court chemin en évitant les murs grâce à une heuristique de Manhattan.",
+        deep: "<ul><li><strong>Calcul :</strong> Fonction récursive de recherche de nœuds ouverts/fermés.</li><li><strong>Stockage :</strong> Liste de tuples (x, y) représentant chaque pas vers la cible.</li></ul>",
+        input: "Grille globale",
+        output: "Liste de coordonnées"
+      },
+      'WP': {
+        icon: '',
+        title: 'Waypoint',
+        subtitle: 'Lookahead=1',
+        simple: "Au lieu de montrer la fin du labyrinthe à l'agent, on lui montre juste la prochaine case du chemin tracé par A*. C'est le secret pour éviter qu'il ne se cogne dans les murs !",
+        tech: "Prend la trajectoire d'A* et extrait l'indice `actuel + lookahead`. Avec lookahead=1, c'est la case immédiatement adjacente valide.",
+        math: "W_t = Path_{A*}[t + 1]",
+        input: "Trajectoire A*",
+        output: "Coordonnées (x, y) cible"
+      },
+      'TOBS': {
+        icon: '',
+        title: 'Observation Cible',
+        subtitle: 'Image Synthétique',
+        simple: "On dessine informatiquement ce que l'agent verrait s'il était déjà arrivé sur le waypoint.",
+        tech: "Fonction `get_target_observation(env, waypoint)` qui force l'environnement à générer une vue 5x5 virtuelle depuis une position arbitraire, sans déplacer le véritable agent.",
+        input: "Waypoint (x, y)",
+        output: "Vision virtuelle (x_waypoint)"
+      },
+      'PERC': {
+        icon: '',
+        title: 'Perception (CNN)',
+        subtitle: 'L\'Encodeur',
+        simple: "Traduit les images en idées mathématiques (vecteurs). Il compresse ce que l'agent voit actuellement, ET l'image synthétique du waypoint qu'il doit atteindre.",
+        tech: "Réseau Convolutif entraîné via JEPA (sans labels). Convertit un tenseur [1, 5, 5] en un vecteur latent [16].",
+        deep: "<ul><li><strong>Encodeur :</strong> <code>CNNEncoder(in_channels=1, hidden_dim=16)</code></li><li><strong>Traitement :</strong> Deux appels, l'un pour $x_t$, l'autre pour $x_{waypoint}$.</li></ul>",
+        input: "Images (x_t, x_waypoint)",
+        output: "Latents (s_t, s_waypoint)"
+      },
+      'ACT': {
+        icon: '',
+        title: 'CEM Actor',
+        subtitle: 'Planificateur T=1',
+        simple: "Propose 1024 actions immédiates possibles au hasard. Comme on a réduit l'horizon à 1 (T=1), il sature littéralement les 4 directions de base.",
+        tech: "Cross-Entropy Method bridée. Au lieu de séquences de longueur 5, il génère des tenseurs d'actions pour $t=1$.",
+        math: "A \\sim \\mathcal{N}(\\mu, \\Sigma) \\text{ pour } T=1",
+        input: "s_t actuel",
+        output: "Séquences a_t"
+      },
+      'SIM': {
+        icon: '',
+        title: 'Simulation Latente',
+        subtitle: 'OneHot Prep',
+        simple: "Prépare les actions imaginées par l'Acteur dans un format (One-Hot) compréhensible par le cerveau du World Model.",
+        tech: "Conversion de l'action discrète {0,1,2,3} en vecteur OneHot pour compatibilité matricielle avec $s_t$.",
+        input: "Actions discrètes a_t",
+        output: "Actions OneHot"
+      },
+      'WM': {
+        icon: '',
+        title: 'World Model',
+        subtitle: 'Réseau ConvGRU',
+        simple: "Il imagine le futur ! Il prend la position actuelle, regarde l'action imaginée, et prédit à quoi ressemblera l'agent dans 1 pas.",
+        tech: "Cellule GRU convolutive adaptée. Calcule l'état latent futur sans jamais repasser par l'espace des pixels (JEPA). Loss finale : 0.45 !",
+        math: "\\hat{s}_{t+1} = \\text{ConvGRU}(s_t, a_{onehot})",
+        input: "s_t, action OneHot",
+        output: "s_{t+1} prédit"
+      },
+      'COST': {
+        icon: '',
+        title: 'Fonction de Coût',
+        subtitle: 'Distance de Manhattan',
+        simple: "Compare l'avenir imaginé avec le waypoint cible. Donne une mauvaise note (grand coût) si c'est loin, et une excellente note (coût zéro) si c'est la bonne case.",
+        tech: "Calcule la norme L2 ou Manhattan entre le latent imaginé $\\hat{s}_{t+1}$ et le latent cible $s_{waypoint}$.",
+        math: "Cost = \\Vert \\hat{s}_{t+1} - s_{waypoint} \\Vert_2",
+        input: "s_{t+1} et s_{waypoint}",
+        output: "Coût scalaire"
+      },
+      'EVAL': {
+        icon: '',
+        title: 'Évaluation',
+        subtitle: 'Sélection des Élites',
+        simple: "Garde uniquement les 100 meilleures idées de l'Acteur. À la fin de la réflexion, l'idée gagnante est officiellement exécutée dans le vrai labyrinthe.",
+        tech: "Tri de la matrice de coûts (argsort). Extrait le top-K (élites) pour mettre à jour la moyenne et variance du CEM.",
+        deep: "<ul><li><strong>Output finale :</strong> <code>best_action = elites[0][0].item()</code></li></ul>",
+        input: "Coûts de toutes les actions",
+        output: "Meilleure action a_t"
+      }
+    };
+
+    const nodes = document.querySelectorAll('.node');
+    const defaultInfo = document.getElementById('panel-placeholder');
+    const dynamicInfo = document.getElementById('panel-content');
+    
+    window.showNode = function(moduleId) {
+      try {
+        nodes.forEach(n => n.classList.remove('active'));
+      
+      const clickedNode = document.getElementById('node-' + moduleId);
+      if (clickedNode) clickedNode.classList.add('active');
+
+      document.querySelectorAll('.conn-group').forEach(group => {
+        const src = group.getAttribute('data-src');
+        const dst = group.getAttribute('data-dst');
+        if (src === 'node-' + moduleId || dst === 'node-' + moduleId) {
+          group.classList.add('active');
+        } else {
+          group.classList.remove('active');
+        }
+      });
+
+      const data = nodeData[moduleId];
+      if (data) {
+        defaultInfo.style.display = 'none';
+        dynamicInfo.style.display = 'block';
+        
+        document.getElementById('p-icon').textContent = data.icon;
+        document.getElementById('p-title').textContent = data.title;
+        document.getElementById('p-subtitle').textContent = data.subtitle;
+        document.getElementById('p-simple').innerHTML = data.simple;
+        document.getElementById('p-tech').innerHTML = data.tech;
+        
+        // Optional sections
+        const deepSection = document.getElementById('p-deep-section');
+        if (data.deep) {
+          deepSection.style.display = 'block';
+          document.getElementById('p-deep').innerHTML = data.deep;
+        } else {
+          deepSection.style.display = 'none';
+        }
+
+        const mathSection = document.getElementById('p-math-section');
+        if (data.math) {
+          mathSection.style.display = 'block';
+          document.getElementById('p-math').textContent = "$$ " + data.math + " $$";
+        } else {
+          mathSection.style.display = 'none';
+        }
+
+        document.getElementById('p-in').textContent = data.input;
+        document.getElementById('p-out').textContent = data.output;
+        
+        if (window.renderMathInElement) {
+          renderMathInElement(dynamicInfo, {
+            delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false}
+            ]
+          });
+        }
+      }
+      } catch(e) {
+        document.getElementById('panel-placeholder').innerHTML = "<h3 style='color:red;'>JS Error</h3><p>" + e.message + "</p><pre>" + e.stack + "</pre>";
+        document.getElementById('panel-placeholder').style.display = 'block';
+        document.getElementById('panel-content').style.display = 'none';
+      }
+    };
+  </script>
+</body>
+</html>

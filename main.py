@@ -11,20 +11,20 @@ from env.gridworld import GridWorldEnv
 from modules.perception import Perception
 from modules.world_model import WorldModel
 from modules.memory import ShortTermMemory
-from visualize import create_synthetic_target_obs
+
 from utils.losses import compute_sigreg_loss
 
 def main():
     print("🚀 Démarrage de l'entraînement JEPA V2 (Physique & OOD)")
     
-    device = torch.device("cpu")
+    device = torch.device('mps' if torch.backends.mps.is_available() else 'cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Utilisation de l'appareil : {device}")
     
     # 1. Initialisation de l'Environnement
-    env = GridWorldEnv(size=10, max_energy=100)
+    env = GridWorldEnv(size=20, max_energy=100)
     
     # Charger le dataset offline
-    dataset_path = "dataset/grids_v2.pt"
+    dataset_path = "dataset/grids_dungeon.pt"
     if not os.path.exists(dataset_path):
         print(f"❌ Erreur: Dataset introuvable ({dataset_path}). Générez-le avec generate_dataset.py.")
         return
@@ -41,7 +41,7 @@ def main():
     for param in target_encoder.parameters():
         param.requires_grad = False
         
-    world_model = WorldModel(latent_dim=latent_dim, action_dim=action_dim, hidden_dim=128).to(device)
+    world_model = WorldModel(latent_dim=latent_dim, action_dim=action_dim, hidden_dim=128, spatial_size=20).to(device)
     
     # Plus de Critique !
     
@@ -74,12 +74,21 @@ def main():
     
     # Boucle d'Épisodes
     for episode in range(num_episodes):
-        # Tirer une grille du dataset
+        # Tirer une grille du dataset (tensor 4x20x20)
         grid_data = random.choice(grids_dataset)
-        env.obstacles = grid_data['obstacles']
-        env.agent_pos = grid_data['agent_pos'].copy()
-        env.target_pos = grid_data['target_pos']
-        env.station_pos = grid_data['station_pos']
+        
+        # Reconstruire l'état de l'environnement à partir du tenseur
+        env.obstacles = grid_data[0].nonzero().tolist()
+        
+        target_idx = grid_data[1].nonzero()
+        env.target_pos = target_idx[0].tolist() if len(target_idx) > 0 else [0, 0]
+        
+        station_idx = grid_data[2].nonzero()
+        env.station_pos = station_idx[0].tolist() if len(station_idx) > 0 else [0, 0]
+        
+        agent_idx = grid_data[3].nonzero()
+        env.agent_pos = agent_idx[0].tolist() if len(agent_idx) > 0 else [0, 0]
+        
         env.energy = env.max_energy
         env.done = False
         
@@ -135,7 +144,7 @@ def main():
                     # Encodage par la Perception Cible (Réseau Cible - EMA)
                     with torch.no_grad():
                         z_next_target_flat = target_encoder(s_next_flat)
-                        z_next_target = z_next_target_flat.view(B, T, latent_dim)
+                        z_next_target = z_next_target_flat.view(B, T, latent_dim, 20, 20)
                         
                     # Prédiction par le World Model (BPTT)
                     h_t = world_model.init_hidden(B, device)
@@ -172,8 +181,13 @@ def main():
                         p_tgt.data.mul_(1.0 - tau).add_(p_main.data, alpha=tau)
                         
                 except Exception as e:
+                    import traceback
                     print(f"Erreur d'apprentissage : {e}")
-                    pass
+                    traceback.print_exc()
+                    break
+
+                break
+
         
         # Tracking
         if (episode + 1) % 50 == 0:

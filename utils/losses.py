@@ -7,6 +7,11 @@ def compute_sigreg_loss(s_t, var_weight=25.0, cov_weight=1.0, eps=1e-4):
     Force l'espace latent à être diversifié (Variance) et décorrélé (Covariance).
     s_t : Tenseur de shape [Batch_size, Latent_dim]
     """
+    if len(s_t.shape) == 4:
+        # Spatial tensor: flatten spatial dims into batch dim to compute variance over channels
+        B, C, H, W = s_t.shape
+        s_t = s_t.transpose(1, 3).contiguous().view(B * H * W, C)
+        
     B, D = s_t.shape
     
     # 1. Centrer les représentations sur le batch

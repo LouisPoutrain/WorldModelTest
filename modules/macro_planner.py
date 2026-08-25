@@ -6,8 +6,8 @@ class MacroPlanner:
     def __init__(self, waypoint_lookahead=5):
         self.lookahead = waypoint_lookahead
         
-    def a_star(self, grid, start, goal):
-        # grid: 10x10 numpy array, 1 = wall, 0 = free
+    def a_star(self, grid, start, goal, env=None):
+        # grid: numpy array, 1 = wall, 0 = free
         def heuristic(a, b):
             return abs(a[0] - b[0]) + abs(a[1] - b[1])
             
@@ -27,6 +27,14 @@ class MacroPlanner:
                 if 0 <= next_node[0] < grid.shape[0] and 0 <= next_node[1] < grid.shape[1]:
                     if grid[next_node[0], next_node[1]] == 1:
                         continue # Wall
+                    
+                    # Brider A* : si env est fourni, on ne peut pas changer de pièce, SAUF si le next_node est le goal (la porte)
+                    if env is not None:
+                        start_room = env.get_current_room(start)
+                        next_room = env.get_current_room(next_node)
+                        if start_room != -1 and next_room != -1 and next_room != start_room and next_node != goal:
+                            continue # Impossible de traverser les pièces
+                            
                     new_cost = cost_so_far[current] + 1
                     if next_node not in cost_so_far or new_cost < cost_so_far[next_node]:
                         cost_so_far[next_node] = new_cost
@@ -45,6 +53,13 @@ class MacroPlanner:
         path.reverse()
         return path
 
+    def get_path(self, start, goal, env):
+        start = tuple(start)
+        goal = tuple(goal)
+        grid = env.render()
+        walls = (grid == 1).astype(int)
+        path = self.a_star(walls, start, goal, env)
+        return path
     def get_waypoint_obs(self, x_t):
         """
         x_t: (1, 4, 10, 10) tensor

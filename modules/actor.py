@@ -52,11 +52,12 @@ class Actor(torch.nn.Module):
                     agent_prob = world_model.decode_agent(s_sim)
                     B_sim = agent_prob.shape[0]
                     agent_idx = agent_prob.view(B_sim, -1).argmax(dim=1)
-                    pred_y, pred_x = agent_idx // 10, agent_idx % 10
+                    spatial_size = agent_prob.shape[-1]
+                    pred_y, pred_x = agent_idx // spatial_size, agent_idx % spatial_size
                     
                     goal_prob = world_model.decode_agent(s_goal)
-                    goal_idx = goal_prob.view(s_goal.shape[0], -1).argmax(dim=1)
-                    goal_y, goal_x = goal_idx // 10, goal_idx % 10
+                    goal_idx = goal_prob.view(goal_prob.shape[0], -1).argmax(dim=1)
+                    goal_y, goal_x = goal_idx // spatial_size, goal_idx % spatial_size
                     
                     dist_to_goal = torch.abs(pred_y - goal_y) + torch.abs(pred_x - goal_x)
                     
@@ -74,3 +75,64 @@ class Actor(torch.nn.Module):
                 best_action = actions_discrete[elite_indices[0], 0].item()
                 
         return best_action, best_cost, best_h_t
+
+class HierarchicalActor:
+    def __init__(self, perception, critic, astar):
+        self.perception = perception
+        self.critic = critic
+        self.astar = astar
+        
+    def plan(self, env, s_t, s_goal):
+        """
+        1. Trouve la position de l'agent et du but (via l'environnement local).
+        2. Si dans la même pièce, A* direct vers le but.
+        3. Sinon, liste les portes de la pièce, utilise le Critique pour choisir la meilleure.
+        4. A* vers la meilleure porte.
+        """
+        agent_pos = env.agent_pos
+        target_pos = env.target_pos
+        
+        agent_room = env.get_current_room(agent_pos)
+        target_room = env.get_current_room(target_pos)
+        
+        # Si dans la même pièce ou sur une porte (room=-1)
+        if agent_room == target_room or agent_room == -1 or target_room == -1:
+            return self.astar.get_path(agent_pos, target_pos, env)
+            
+        # Pièces différentes : le Critique choisit la porte
+        all_doors = env.get_visible_doors()
+        
+        # Filtrer pour ne garder que les portes de la pièce courante
+        doors = []
+        mid = env.size // 2
+        for d in all_doors:
+            dy, dx = d
+            if agent_room == 0 and ((dy == mid and dx < mid) or (dx == mid and dy < mid)): doors.append(d)
+            elif agent_room == 1 and ((dy == mid and dx > mid) or (dx == mid and dy < mid)): doors.append(d)
+            elif agent_room == 2 and ((dy == mid and dx < mid) or (dx == mid and dy > mid)): doors.append(d)
+            elif agent_room == 3 and ((dy == mid and dx > mid) or (dx == mid and dy > mid)): doors.append(d)
+            
+        # Si on ne trouve aucune porte (bizarre), on fallback sur toutes
+        if not doors: doors = all_doors
+        
+        best_door = None
+        min_cost = float('inf')
+        
+        for door in doors:
+            # Générer une observation fictive où l'agent est sur la porte
+            door_obs = env.get_local_observation().clone()
+            door_obs[3, :, :] = 0.0 # Effacer l'agent
+            door_obs[3, door[0], door[1]] = 1.0 # Placer sur la porte
+            
+            door_obs = door_obs.unsqueeze(0).to(next(self.perception.parameters()).device)
+            s_door = self.perception(door_obs)
+            
+            # Le Critique évalue le coût depuis cette porte jusqu'au but final
+            cost = self.critic(s_door, s_goal).item()
+            
+            if cost < min_cost:
+                min_cost = cost
+                best_door = door
+                
+        # Le Micro-Planner (A*) calcule le chemin local jusqu'à la porte choisie
+        return self.astar.get_path(agent_pos, best_door, env)

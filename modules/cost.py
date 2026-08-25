@@ -31,10 +31,9 @@ def intrinsic_cost(s_t, s_next, s_goal, wall_penalty=5.0):
     return cost
 
 class SpatialCritic(nn.Module):
-    def __init__(self, latent_dim=16, hidden_dim=64):
+    def __init__(self, latent_dim=16, hidden_dim=64, spatial_size=20):
         super(SpatialCritic, self).__init__()
         
-        # Prend en entrée la concaténation de s_sim et s_goal
         self.conv_net = nn.Sequential(
             nn.Conv2d(latent_dim * 2, hidden_dim, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
@@ -45,7 +44,7 @@ class SpatialCritic(nn.Module):
         )
         
         self.mlp = nn.Sequential(
-            nn.Linear(hidden_dim * 10 * 10, hidden_dim),
+            nn.Linear(hidden_dim * spatial_size * spatial_size, hidden_dim),
             nn.ReLU(inplace=True),
             nn.Linear(hidden_dim, 1) # Prédit la somme des coûts futurs
         )

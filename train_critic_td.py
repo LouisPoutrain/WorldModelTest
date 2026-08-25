@@ -45,8 +45,8 @@ def main():
     print("🚀 Entraînement du Critique (Phase 3 - TD-Learning / Dyna-Q Imagination pure)")
     device = torch.device('mps' if torch.backends.mps.is_available() else 'cuda' if torch.cuda.is_available() else 'cpu')
     
-    env = GridWorldEnv(size=10, max_energy=100)
-    dataset_path = "dataset/grids_v2.pt"
+    env = GridWorldEnv(size=20, max_energy=100)
+    dataset_path = "dataset/grids_dungeon.pt"
     if not os.path.exists(dataset_path):
         print(f"❌ Dataset introuvable ({dataset_path}).")
         return
@@ -58,7 +58,7 @@ def main():
     
     # H-JEPA utilise in_channels=4 et hidden_dim=32
     perception = Perception(in_channels=4, latent_dim=latent_dim).to(device)
-    world_model = WorldModel(latent_dim=latent_dim, action_dim=action_dim, hidden_dim=32).to(device)
+    world_model = WorldModel(latent_dim=latent_dim, action_dim=action_dim, hidden_dim=32, spatial_size=20).to(device)
     
     checkpoint_path_v2 = "checkpoints/agent_h_jepa.pth"
     if os.path.exists(checkpoint_path_v2):
@@ -76,8 +76,8 @@ def main():
     for p in world_model.parameters(): p.requires_grad = False
     
     # Initialisation des critiques (Online et Target)
-    online_critic = SpatialCritic(latent_dim=latent_dim).to(device)
-    target_critic = SpatialCritic(latent_dim=latent_dim).to(device)
+    online_critic = SpatialCritic(latent_dim=latent_dim, spatial_size=20).to(device)
+    target_critic = SpatialCritic(latent_dim=latent_dim, spatial_size=20).to(device)
     target_critic.load_state_dict(online_critic.state_dict())
     for p in target_critic.parameters(): p.requires_grad = False
     
@@ -102,9 +102,14 @@ def main():
     for episode in tqdm(range(num_episodes)):
         # 1. Sélectionner une grille aléatoire
         grid_data = random.choice(grids_dataset)
-        env.obstacles = grid_data['obstacles']
-        env.agent_pos = grid_data['agent_pos'].copy()
-        env.target_pos = grid_data['target_pos']
+        
+        env.obstacles = grid_data[0].nonzero().tolist()
+        
+        target_idx = grid_data[1].nonzero()
+        env.target_pos = target_idx[0].tolist() if len(target_idx) > 0 else [0, 0]
+        
+        agent_idx = grid_data[3].nonzero()
+        env.agent_pos = agent_idx[0].tolist() if len(agent_idx) > 0 else [0, 0]
         
         # Obtenir l'observation réelle initiale
         # env.get_local_observation() -> [4, 10, 10]. unsqueeze(0) -> [1, 4, 10, 10]
@@ -222,7 +227,7 @@ def main():
             
         if (episode + 1) % 500 == 0 or (episode + 1) == num_episodes:
             checkpoint_out = "checkpoints/agent_critic_td.pth"
-            torch.save({'cost': online_critic.state_dict()}, checkpoint_out)
+            torch.save({'critic': online_critic.state_dict()}, checkpoint_out)
             
 if __name__ == "__main__":
     main()

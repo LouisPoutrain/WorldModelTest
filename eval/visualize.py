@@ -20,9 +20,9 @@ def visualize_interactive():
     
     env = GridWorldEnv(size=20, obstacle_density=0.08)
     
-    perception = Perception(in_channels=4, latent_dim=16).to(device)
-    world_model = WorldModel(latent_dim=16, action_dim=4, hidden_dim=32, spatial_size=20).to(device)
-    critic = SpatialCritic(latent_dim=16, hidden_dim=64, spatial_size=20).to(device)
+    perception = Perception(in_channels=4, latent_dim=32).to(device)
+    world_model = WorldModel(latent_dim=32, action_dim=4, hidden_dim=128, spatial_size=20).to(device)
+    critic = SpatialCritic(latent_dim=32, hidden_dim=64, spatial_size=20).to(device)
     
     # Chemins relatifs depuis le dossier eval/
     base_dir = os.path.join(os.path.dirname(__file__), '..', 'checkpoints')
@@ -49,6 +49,7 @@ def visualize_interactive():
     while True:
         print("\nRecherche d'un nouvel épisode multi-pièces...")
         frames = []
+        hierarchical_actor.reset_memory()
         obs = env.reset()
         
         # Forcer des pièces différentes pour que ce soit intéressant

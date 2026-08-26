@@ -55,7 +55,7 @@ def main():
     replay_buffer = ShortTermMemory(capacity=100000)
     
     # Paramètres d'entraînement
-    num_episodes = 2500
+    num_episodes = 1500
     batch_size = 64
     
     # Logs
@@ -66,7 +66,7 @@ def main():
         csv.writer(f).writerow(['Timestamp', 'Episode', 'L_pred', 'L_sigreg'])
         
     os.makedirs("checkpoints", exist_ok=True)
-    checkpoint_path = "checkpoints/agent_checkpoint_v2.pth"
+    checkpoint_path = "checkpoints/agent_h_jepa.pth"
     
     avg_loss_pred = 0.0
     avg_loss_sigreg = 0.0

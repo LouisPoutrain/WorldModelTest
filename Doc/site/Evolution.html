@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Évolution de l'Architecture — WorldModelTest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ============ TIMELINE ============ */
+    .timeline-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .page-title h1 {
+      font-size: 2.8rem;
+    }
+    .page-title p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      margin-top: 12px;
+    }
+
+    /* Version selector tabs */
+    .version-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 40px 0 0;
+      flex-wrap: wrap;
+    }
+
+    .version-tab {
+      padding: 10px 22px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+    .version-tab:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .version-tab.active {
+      background: rgba(56,189,248,0.12);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .version-tab .version-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 100px;
+      background: var(--success);
+      color: #fff;
+      font-weight: 700;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .version-tab.active .version-badge {
+      opacity: 1;
+    }
+
+    /* Progress bar */
+    .progress-bar-outer {
+      max-width: 700px;
+      margin: 32px auto 0;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 100px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .progress-bar-inner {
+      height: 100%;
+      background: linear-gradient(to right, #38bdf8, #a855f7);
+      border-radius: 100px;
+      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      max-width: 700px;
+      margin: 8px auto 0;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    /* Main content area */
+    .version-display {
+      margin-top: 48px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      animation: fadeSlideIn 0.4s ease forwards;
+    }
+    @media (max-width: 800px) {
+      .version-display { grid-template-columns: 1fr; }
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .version-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .version-card h3 {
+      font-size: 1.1rem;
+      color: var(--primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .version-card h3 .icon {
+      font-size: 1.4rem;
+    }
+
+    /* Architecture diagram (SVG-based) */
+    .arch-diagram {
+      grid-column: 1 / -1;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      overflow: hidden;
+    }
+    .arch-diagram h3 {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+
+    #arch-svg {
+      width: 100%;
+      height: 280px;
+      display: block;
+    }
+
+    /* Module blocks in SVG */
+    .module-rect {
+      rx: 10;
+      ry: 10;
+      transition: filter 0.3s;
+    }
+    .module-rect:hover { filter: brightness(1.3); cursor: pointer; }
+
+    /* Stat grid */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .stat-item {
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #38bdf8, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Innovation chips */
+    .innovation-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .innovation-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.92rem;
+      color: var(--text-muted);
+    }
+    .chip {
+      flex-shrink: 0;
+      padding: 2px 10px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: rgba(56,189,248,0.15);
+      color: var(--primary);
+      border: 1px solid rgba(56,189,248,0.25);
+      white-space: nowrap;
+    }
+    .chip.new { background: rgba(16,185,129,0.12); color: var(--success); border-color: rgba(16,185,129,0.25); }
+    .chip.fix { background: rgba(245,158,11,0.12); color: var(--accent); border-color: rgba(245,158,11,0.25); }
+    .chip.removed { background: rgba(239,68,68,0.12); color: #f87171; border-color: rgba(239,68,68,0.25); }
+
+    /* Failure card */
+    .failure-card {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+    .failure-card h4 { color: #f87171; font-size: 0.95rem; margin-bottom: 8px; }
+    .failure-card p { color: var(--text-muted); font-size: 0.88rem; }
+
+    /* Timeline strip at bottom */
+    .mini-timeline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin: 56px 0 0;
+      padding: 24px 0;
+      border-top: 1px solid var(--card-border);
+      overflow-x: auto;
+    }
+    .mini-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      gap: 6px;
+      min-width: 80px;
+    }
+    .mini-node .dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--card-border);
+      border: 2px solid var(--card-border);
+      transition: all 0.3s;
+    }
+    .mini-node.active .dot {
+      background: var(--primary);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 6px rgba(56,189,248,0.2);
+    }
+    .mini-node .mini-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      transition: color 0.2s;
+    }
+    .mini-node.active .mini-label { color: var(--primary); }
+    .mini-node .mini-rate {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .timeline-line {
+      height: 2px;
+      flex: 1;
+      background: var(--card-border);
+      min-width: 30px;
+      max-width: 80px;
+      position: relative;
+    }
+    .timeline-line::after {
+      content:'';
+      position: absolute;
+      top: 0; left: 0; height: 100%;
+      background: linear-gradient(to right, #38bdf8, #a855f7);
+      width: var(--fill, 0%);
+      transition: width 0.6s ease;
+    }
+
+    /* Tooltip */
+    #svg-tooltip {
+      position: fixed;
+      background: var(--card-bg);
+      border: 1px solid var(--primary);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: var(--text-main);
+      pointer-events: none;
+      display: none;
+      z-index: 100;
+      max-width: 220px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    #svg-tooltip strong { color: var(--primary); display: block; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+  <!-- NAV BAR -->
+  <nav class="nav-bar" style="display:flex;justify-content:center;gap:20px;padding:15px 20px;border-bottom:1px solid var(--card-border);background:rgba(0,0,0,0.3);flex-wrap:wrap;">
+    <a href="Archi.html" style="color:#94a3b8;text-decoration:none;font-size:0.95rem;padding:8px 18px;border-radius:8px;font-family:Inter,sans-serif;font-weight:500;transition:all 0.2s;" onmouseover="this.style.background='rgba(56,189,248,0.1)';this.style.color='#38bdf8'" onmouseout="this.style.background='';this.style.color='#94a3b8'">V1</a>
+    <a href="Classes.html" style="color:#94a3b8;text-decoration:none;font-size:0.95rem;padding:8px 18px;border-radius:8px;font-family:Inter,sans-serif;font-weight:500;transition:all 0.2s;" onmouseover="this.style.background='rgba(56,189,248,0.1)';this.style.color='#38bdf8'" onmouseout="this.style.background='';this.style.color='#94a3b8'">Diagramme de Classes</a>
+    <a href="H-JEPA_Final.html" style="color:#94a3b8;text-decoration:none;font-size:0.95rem;padding:8px 18px;border-radius:8px;font-family:Inter,sans-serif;font-weight:500;transition:all 0.2s;" onmouseover="this.style.background='rgba(56,189,248,0.1)';this.style.color='#38bdf8'" onmouseout="this.style.background='';this.style.color='#94a3b8'">V3</a>
+    <a href="Evolution.html" style="color:var(--primary);background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);text-decoration:none;font-size:0.95rem;padding:8px 18px;border-radius:8px;font-family:Inter,sans-serif;font-weight:500;">Évolution</a>
+  </nav>
+
+  <div class="timeline-wrapper">
+    <div class="page-title">
+      <span class="hero-badge">V1 → V5 — 18 mois de recherche</span>
+      <h1>Évolution de l'Architecture</h1>
+      <p>Cliquez sur une version pour explorer les innovations, les métriques et le schéma d'architecture.</p>
+    </div>
+
+    <!-- Version selector tabs -->
+    <div class="version-tabs" id="tabs">
+      <button class="version-tab" data-v="0" onclick="selectVersion(0)">V1 <span class="version-badge">✓</span></button>
+      <button class="version-tab" data-v="1" onclick="selectVersion(1)">V2 <span class="version-badge">✓</span></button>
+      <button class="version-tab" data-v="2" onclick="selectVersion(2)">V3 <span class="version-badge">✓</span></button>
+      <button class="version-tab" data-v="3" onclick="selectVersion(3)">V4 <span class="version-badge">✓</span></button>
+      <button class="version-tab" data-v="4" onclick="selectVersion(4)">V5 <span class="version-badge">★</span></button>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-bar-outer">
+      <div class="progress-bar-inner" id="progress-bar" style="width:20%"></div>
+    </div>
+    <div class="progress-label"><span>V1 — DreamerV2 pur</span><span>V5 — H-JEPA Hiérarchique</span></div>
+
+    <!-- Main dynamic content -->
+    <div class="version-display" id="version-display"></div>
+
+    <!-- Mini timeline -->
+    <div class="mini-timeline" id="mini-timeline"></div>
+  </div>
+
+  <!-- SVG Tooltip -->
+  <div id="svg-tooltip"></div>
+
+  <script>
+  const VERSIONS = [
+    {
+      name: "V1",
+      title: "DreamerV2 — Le Point de Départ",
+      badge: "Baseline",
+      badgeColor: "#64748b",
+      successRate: 32,
+      avgSteps: 95,
+      env: "10×10",
+      mapType: "Grille simple",
+      innovations: [
+        { label: "NEW", text: "Encodeur ConvNet + Espace Latent 32D" },
+        { label: "NEW", text: "World Model GRU (RSSM inspiré de DreamerV2)" },
+        { label: "NEW", text: "Planificateur CEM (Cross-Entropy Method)" },
+        { label: "NEW", text: "Boucle Perceive → Imagine → Act" },
+      ],
+      failure: "Le CEM préfère s'écraser contre les murs plutôt que de contourner. Victime du 'Piège de Manhattan'.",
+      modules: [
+        { id: "obs", label: "Observation\n4×10×10", x: 20, y: 110, w: 120, h: 50, color: "#334155" },
+        { id: "enc", label: "Encodeur\nConvNet", x: 180, y: 110, w: 120, h: 50, color: "#0369a1", tooltip: "Projette l'obs dans un espace latent continu de 32 dimensions." },
+        { id: "wm",  label: "World Model\nGRU (RSSM)", x: 340, y: 110, w: 130, h: 50, color: "#7c3aed", tooltip: "Prédit l'état latent futur pour chaque action envisagée." },
+        { id: "cem", label: "Planificateur\nCEM", x: 510, y: 110, w: 120, h: 50, color: "#b45309", tooltip: "Échantillonne 500 séquences d'actions, garde les 50 meilleures." },
+        { id: "act", label: "Action", x: 670, y: 110, w: 80, h: 50, color: "#334155" },
+      ],
+      arrows: [
+        [140,135,180,135], [300,135,340,135], [470,135,510,135], [630,135,670,135]
+      ]
+    },
+    {
+      name: "V2",
+      title: "JEPA — L'Anti-Effondrement",
+      badge: "+15% ↑",
+      badgeColor: "#0369a1",
+      successRate: 47,
+      avgSteps: 82,
+      env: "10×10",
+      mapType: "Grille simple + obstacles",
+      innovations: [
+        { label: "NEW", text: "Perte JEPA (prédiction latente non-reconstituée)" },
+        { label: "NEW", text: "Target Encoder EMA (anti-effondrement)" },
+        { label: "NEW", text: "Régularisation SIGReg sur l'espace latent" },
+        { label: "FIX", text: "Remplacement MSE sur pixels → MSE sur latent" },
+      ],
+      failure: "Les performances plafonnent car le CEM explore aveuglément dans des horizons temporels trop courts (H=5).",
+      modules: [
+        { id: "obs", label: "Observation", x: 20, y: 110, w: 110, h: 50, color: "#334155" },
+        { id: "enc", label: "Encodeur\nJEPA (online)", x: 170, y: 70, w: 130, h: 50, color: "#0369a1", tooltip: "Encodeur en ligne, mis à jour par gradient descent." },
+        { id: "tgt", label: "Target Encoder\n(EMA)", x: 170, y: 160, w: 130, h: 50, color: "#164e63", tooltip: "Copie EMA de l'encodeur. Ne reçoit pas de gradients directs — évite l'effondrement." },
+        { id: "wm",  label: "World Model\nJEPA Predictor", x: 350, y: 110, w: 140, h: 50, color: "#7c3aed", tooltip: "Prédit z_{t+1} dans l'espace latent plutôt que les pixels." },
+        { id: "cem", label: "Planificateur\nCEM", x: 540, y: 110, w: 120, h: 50, color: "#b45309", tooltip: "Inchangé depuis V1." },
+        { id: "act", label: "Action", x: 710, y: 110, w: 70, h: 50, color: "#334155" },
+      ],
+      arrows: [
+        [130,135,170,95], [130,135,170,185], [300,95,350,135], [300,185,350,135],
+        [490,135,540,135], [660,135,710,135]
+      ]
+    },
+    {
+      name: "V3",
+      title: "H-JEPA — Le Cerveau Hiérarchique",
+      badge: "+35% ↑",
+      badgeColor: "#15803d",
+      successRate: 82,
+      avgSteps: 58,
+      env: "10×10",
+      mapType: "Grille avec murs complexes",
+      innovations: [
+        { label: "NEW", text: "Spatial Critic (Value Function spatiale)" },
+        { label: "NEW", text: "Architecture Hiérarchique : Macro + Micro" },
+        { label: "NEW", text: "Micro-Planificateur A* (déterministe, parfait)" },
+        { label: "REM", text: "Suppression du CEM comme seul planificateur" },
+      ],
+      failure: "L'agent est entraîné sur 10×10. Quand on le généralise sur 20×20, il rate 34% des cas car il évalue des portes inaccessibles (dans d'autres pièces).",
+      modules: [
+        { id: "obs", label: "Observation", x: 20, y: 130, w: 110, h: 50, color: "#334155" },
+        { id: "enc", label: "Encodeur\nJEPA", x: 170, y: 130, w: 120, h: 50, color: "#0369a1", tooltip: "Même encodeur JEPA que V2, paramètres figés pendant la phase Critic." },
+        { id: "crit", label: "Spatial Critic\nV*(s, g)", x: 340, y: 70, w: 130, h: 50, color: "#7c3aed", tooltip: "Réseau de neurones convolutif qui estime le coût total (somme de Bellman) pour atteindre le goal depuis s." },
+        { id: "macro", label: "Macro-Planif.\n(Critic → Porte)", x: 340, y: 180, w: 130, h: 50, color: "#9f1239", tooltip: "Utilise le Critic pour évaluer chaque porte visible et choisir la meilleure." },
+        { id: "astar", label: "Micro-Planif.\nA* (local)", x: 530, y: 130, w: 120, h: 50, color: "#065f46", tooltip: "A* calcule le chemin optimal vers la porte choisie par le Macro-planificateur." },
+        { id: "act", label: "Action", x: 710, y: 130, w: 70, h: 50, color: "#334155" },
+      ],
+      arrows: [
+        [130,155,170,155], [290,155,340,95], [290,155,340,205],
+        [470,95,530,155], [470,205,530,155], [650,155,710,155]
+      ]
+    },
+    {
+      name: "V4",
+      title: "Patch Anti-Cul-de-Sac — La Mémoire",
+      badge: "+8% ↑",
+      badgeColor: "#b45309",
+      successRate: 66,
+      avgSteps: 49,
+      env: "20×20",
+      mapType: "Donjon 4 pièces",
+      innovations: [
+        { label: "FIX", text: "Mémoire des portes dead_ends (set Python)" },
+        { label: "FIX", text: "Détection cul-de-sac : A* échoue dans la bonne pièce" },
+        { label: "FIX", text: "Re-planification automatique vers autre porte" },
+        { label: "FIX", text: "Reset de la mémoire à chaque épisode" },
+      ],
+      failure: "Le Critic est entraîné sur 10×10 mais évalue des cibles sur 20×20. Le signal de Bellman est trop dilué sur de longues distances (γ^60 ≈ 0.04).",
+      modules: [
+        { id: "obs", label: "Observation", x: 20, y: 130, w: 110, h: 50, color: "#334155" },
+        { id: "enc", label: "Encodeur\nJEPA", x: 170, y: 130, w: 120, h: 50, color: "#0369a1" },
+        { id: "mem", label: "Mémoire\nDead Ends", x: 310, y: 50, w: 120, h: 45, color: "#92400e", tooltip: "Un simple set() Python qui mémorise les portes qui mènent à des impasses. Reset à chaque épisode." },
+        { id: "crit", label: "Spatial Critic", x: 310, y: 150, w: 120, h: 50, color: "#7c3aed" },
+        { id: "macro", label: "Macro-Planif.\n(+ Filtre Dead End)", x: 470, y: 130, w: 140, h: 50, color: "#9f1239", tooltip: "Compare la liste des portes disponibles avec la mémoire dead_ends avant de choisir." },
+        { id: "astar", label: "Micro-Planif.\nA*", x: 660, y: 130, w: 100, h: 50, color: "#065f46" },
+      ],
+      arrows: [
+        [130,155,170,155], [290,155,310,175], [290,155,310,72],
+        [430,72,470,155], [430,175,470,155], [610,155,660,155]
+      ]
+    },
+    {
+      name: "V5",
+      title: "Offline RL — Démonstrations Expertes",
+      badge: "Best ★",
+      badgeColor: "#7c3aed",
+      successRate: 62,
+      avgSteps: 46,
+      env: "20×20 natif",
+      mapType: "Donjon 4 pièces (20 000 grilles)",
+      innovations: [
+        { label: "NEW", text: "JEPA ré-entraîné nativement sur 20×20 (latent=32)" },
+        { label: "NEW", text: "Offline RL : Critic entraîné sur trajcts. A* expertes" },
+        { label: "NEW", text: "Exploration guidée → fin du 'Sparse Reward'" },
+        { label: "FIX", text: "ReplayBuffer allégé (5k) — fin des fuites mémoire" },
+      ],
+      failure: "Plafond à ~62% dû au facteur γ=0.95 sur un horizon de 60+ pas. Piste d'amélioration : Reward Shaping ou γ=0.999.",
+      modules: [
+        { id: "data", label: "Dataset\n20 000 grilles", x: 10, y: 60, w: 120, h: 45, color: "#1e3a5f", tooltip: "Dataset offline de 20 000 grilles 20×20 générées par A*. Utilisé pour JEPA et Critic." },
+        { id: "obs", label: "Observation\n4×20×20", x: 10, y: 150, w: 120, h: 50, color: "#334155" },
+        { id: "enc", label: "Encodeur JEPA\n(32D, 20×20)", x: 170, y: 130, w: 130, h: 50, color: "#0369a1", tooltip: "Ré-entraîné de zéro sur le grand dataset. latent_dim=32 pour capturer la topologie de 400 cases." },
+        { id: "astar_exp", label: "A* Expert\n(Offline)", x: 340, y: 50, w: 120, h: 45, color: "#065f46", tooltip: "A* génère les trajectoires expertes pendant l'entraînement du Critic (Offline RL)." },
+        { id: "crit", label: "Critic (20×20)\nTD-Learning", x: 340, y: 150, w: 130, h: 50, color: "#7c3aed", tooltip: "Entraîné sur les démonstrations A* : apprend la vraie topologie du donjon 20×20." },
+        { id: "macro", label: "Macro (+ dead ends)", x: 510, y: 130, w: 140, h: 50, color: "#9f1239" },
+        { id: "astar_exec", label: "A* (Execution)", x: 700, y: 130, w: 80, h: 50, color: "#065f46" },
+      ],
+      arrows: [
+        [130,82,170,155], [130,175,170,155],
+        [300,155,340,72], [300,155,340,175],
+        [460,72,510,155], [460,175,510,155],
+        [650,155,700,155]
+      ]
+    }
+  ];
+
+  let current = 0;
+
+  function buildMiniTimeline() {
+    const container = document.getElementById('mini-timeline');
+    VERSIONS.forEach((v, i) => {
+      if (i > 0) {
+        const line = document.createElement('div');
+        line.className = 'timeline-line';
+        line.id = `tl-line-${i}`;
+        container.appendChild(line);
+      }
+      const node = document.createElement('div');
+      node.className = 'mini-node';
+      node.id = `tl-node-${i}`;
+      node.onclick = () => selectVersion(i);
+      node.innerHTML = `
+        <div class="dot"></div>
+        <span class="mini-label">${v.name}</span>
+        <span class="mini-rate">${v.successRate}%</span>
+      `;
+      container.appendChild(node);
+    });
+  }
+
+  function updateMiniTimeline(idx) {
+    VERSIONS.forEach((_, i) => {
+      const node = document.getElementById(`tl-node-${i}`);
+      node.classList.toggle('active', i === idx);
+      if (i > 0) {
+        const line = document.getElementById(`tl-line-${i}`);
+        if (line) line.style.setProperty('--fill', i <= idx ? '100%' : '0%');
+      }
+    });
+  }
+
+  function buildSVG(v) {
+    const W = 800, H = 280;
+    let svgContent = `<svg id="arch-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#475569"/>
+        </marker>
+      </defs>`;
+
+    // Arrows
+    v.arrows.forEach(([x1,y1,x2,y2]) => {
+      svgContent += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#475569" stroke-width="2" marker-end="url(#arrow)" opacity="0.7"/>`;
+    });
+
+    // Modules
+    v.modules.forEach(m => {
+      const lines = m.label.split('\n');
+      const hasTooltip = !!m.tooltip;
+      svgContent += `
+        <g class="module-group" data-tooltip="${m.tooltip||''}" 
+           onmouseenter="showTooltip(event, this)" onmouseleave="hideTooltip()">
+          <rect x="${m.x}" y="${m.y}" width="${m.w}" height="${m.h}" rx="10" ry="10"
+            fill="${m.color}" stroke="${hasTooltip ? 'rgba(56,189,248,0.4)' : 'rgba(255,255,255,0.08)'}" 
+            stroke-width="${hasTooltip ? 1.5 : 1}" class="module-rect"/>
+          ${lines.map((l,i) => `<text x="${m.x + m.w/2}" y="${m.y + m.h/2 + (i - (lines.length-1)/2) * 16}" 
+            text-anchor="middle" dominant-baseline="middle"
+            fill="white" font-size="12" font-family="Inter, sans-serif" font-weight="${i===0?'600':'400'}"
+            opacity="${i===0?1:0.7}">${l}</text>`).join('')}
+        </g>`;
+    });
+
+    svgContent += `</svg>`;
+    return svgContent;
+  }
+
+  function renderVersion(idx) {
+    const v = VERSIONS[idx];
+    const display = document.getElementById('version-display');
+    // Animate out/in
+    display.style.animation = 'none';
+    display.offsetHeight; // reflow
+    display.style.animation = 'fadeSlideIn 0.4s ease forwards';
+
+    const chipColors = { NEW: 'new', FIX: 'fix', REM: 'removed' };
+
+    display.innerHTML = `
+      <!-- Architecture Diagram -->
+      <div class="arch-diagram">
+        <h3>⚙️ Schéma d'Architecture</h3>
+        ${buildSVG(v)}
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-top:12px;">💡 Survolez les blocs bleutés pour voir le détail de chaque module.</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="version-card">
+        <h3><span class="icon">📊</span> Métriques Clés</h3>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <div class="stat-value">${v.successRate}%</div>
+            <div class="stat-label">Taux de Succès</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">${v.avgSteps}</div>
+            <div class="stat-label">Pas Moyens</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">${v.env}</div>
+            <div class="stat-label">Taille Grille</div>
+          </div>
+        </div>
+        <div style="margin-top:20px;padding:12px 16px;background:rgba(56,189,248,0.06);border-radius:10px;border:1px solid rgba(56,189,248,0.15);">
+          <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;">TYPE D'ENVIRONNEMENT</div>
+          <div style="font-size:0.95rem;font-weight:600;">${v.mapType}</div>
+        </div>
+      </div>
+
+      <!-- Innovations -->
+      <div class="version-card">
+        <h3><span class="icon">🚀</span> Innovations de ${v.name}</h3>
+        <ul class="innovation-list">
+          ${v.innovations.map(inn => `
+            <li>
+              <span class="chip ${chipColors[inn.label]||''}">${inn.label}</span>
+              <span>${inn.text}</span>
+            </li>`).join('')}
+        </ul>
+      </div>
+
+      <!-- Failure -->
+      <div class="failure-card" style="grid-column:1/-1">
+        <h4>⚠️ Limite identifiée → Raison du passage à la version suivante</h4>
+        <p>${v.failure}</p>
+      </div>
+    `;
+  }
+
+  function selectVersion(idx) {
+    current = idx;
+    // Update tabs
+    document.querySelectorAll('.version-tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+    // Update progress bar
+    document.getElementById('progress-bar').style.width = `${(idx+1)*20}%`;
+    // Update mini timeline
+    updateMiniTimeline(idx);
+    // Render content
+    renderVersion(idx);
+  }
+
+  // Tooltip logic
+  function showTooltip(event, el) {
+    const txt = el.getAttribute('data-tooltip');
+    if (!txt) return;
+    const tip = document.getElementById('svg-tooltip');
+    tip.innerHTML = `<strong>ℹ️ Module</strong>${txt}`;
+    tip.style.display = 'block';
+    moveTip(event);
+  }
+  function hideTooltip() {
+    document.getElementById('svg-tooltip').style.display = 'none';
+  }
+  function moveTip(e) {
+    const tip = document.getElementById('svg-tooltip');
+    tip.style.left = (e.clientX + 16) + 'px';
+    tip.style.top  = (e.clientY + 16) + 'px';
+  }
+  document.addEventListener('mousemove', e => {
+    const tip = document.getElementById('svg-tooltip');
+    if (tip.style.display !== 'none') moveTip(e);
+  });
+
+  // Init
+  buildMiniTimeline();
+  selectVersion(0);
+
+  // Keyboard navigation
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' && current < VERSIONS.length-1) selectVersion(current+1);
+    if (e.key === 'ArrowLeft'  && current > 0)                  selectVersion(current-1);
+  });
+  </script>
+
+</body>
+</html>

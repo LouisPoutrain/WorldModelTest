@@ -81,6 +81,14 @@ class HierarchicalActor:
         self.perception = perception
         self.critic = critic
         self.astar = astar
+        self.dead_ends = set()
+        self.last_room = None
+        self.last_door = None
+        
+    def reset_memory(self):
+        self.dead_ends = set()
+        self.last_room = None
+        self.last_door = None
         
     def plan(self, env, s_t, s_goal):
         """
@@ -95,11 +103,24 @@ class HierarchicalActor:
         agent_room = env.get_current_room(agent_pos)
         target_room = env.get_current_room(target_pos)
         
+        # Track door passage
+        if agent_room == -1:
+            self.last_door = tuple(agent_pos)
+        self.last_room = agent_room
+        
         # Si dans la même pièce ou sur une porte (room=-1)
         if agent_room == target_room or agent_room == -1 or target_room == -1:
-            return self.astar.get_path(agent_pos, target_pos, env)
+            path = self.astar.get_path(agent_pos, target_pos, env)
+            if not path and agent_room != -1:
+                # Cible inatteignable même dans la bonne pièce !
+                # C'est un cul-de-sac. On mémorise la porte par laquelle on est entré.
+                if self.last_door:
+                    self.dead_ends.add(self.last_door)
+                # On ne retourne pas None, on continue pour trouver une porte de sortie
+            else:
+                return path
             
-        # Pièces différentes : le Critique choisit la porte
+        # Pièces différentes ou cul-de-sac : le Critique choisit la porte
         all_doors = env.get_visible_doors()
         
         # Filtrer pour ne garder que les portes de la pièce courante
@@ -119,6 +140,9 @@ class HierarchicalActor:
         min_cost = float('inf')
         
         for door in doors:
+            if tuple(door) in self.dead_ends:
+                continue # Ignorer les portes menant à un cul-de-sac
+                
             # Générer une observation fictive où l'agent est sur la porte
             door_obs = env.get_local_observation().clone()
             door_obs[3, :, :] = 0.0 # Effacer l'agent
@@ -134,5 +158,10 @@ class HierarchicalActor:
                 min_cost = cost
                 best_door = door
                 
+        if best_door is None:
+            # Trapped! All doors are dead ends.
+            self.dead_ends.clear()
+            return None
+            
         # Le Micro-Planner (A*) calcule le chemin local jusqu'à la porte choisie
         return self.astar.get_path(agent_pos, best_door, env)

@@ -19,9 +19,9 @@ def evaluate(agent_type="h-jepa", num_episodes=10, max_steps=100):
     env = GridWorldEnv(size=20, obstacle_density=0.08)
     
     # Models
-    perception = Perception(in_channels=4, latent_dim=16).to(device)
-    world_model = WorldModel(latent_dim=16, action_dim=4, hidden_dim=32, spatial_size=20).to(device)
-    critic = SpatialCritic(latent_dim=16, hidden_dim=64, spatial_size=20).to(device)
+    perception = Perception(in_channels=4, latent_dim=32).to(device)
+    world_model = WorldModel(latent_dim=32, action_dim=4, hidden_dim=128, spatial_size=20).to(device)
+    critic = SpatialCritic(latent_dim=32, hidden_dim=64, spatial_size=20).to(device)
     
     try:
         perception.load_state_dict(torch.load('checkpoints/agent_h_jepa.pth', map_location=device)['perception'])
@@ -42,6 +42,7 @@ def evaluate(agent_type="h-jepa", num_episodes=10, max_steps=100):
     total_steps = 0
     
     for ep in tqdm(range(num_episodes)):
+        hierarchical_actor.reset_memory()
         obs = env.reset()
         done = False
         steps = 0

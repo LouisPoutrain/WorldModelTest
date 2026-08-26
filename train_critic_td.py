@@ -16,6 +16,7 @@ from env.gridworld import GridWorldEnv
 from modules.perception import Perception
 from modules.world_model import WorldModel
 from modules.cost import SpatialCritic, intrinsic_cost, update_ema
+from modules.macro_planner import MacroPlanner
 
 class ReplayBuffer:
     def __init__(self, capacity):
@@ -53,12 +54,12 @@ def main():
     grids_dataset = torch.load(dataset_path)
     print(f"✅ Dataset hors-ligne chargé : {len(grids_dataset)} grilles.")
     
-    latent_dim = 16
+    latent_dim = 32
     action_dim = 4
     
-    # H-JEPA utilise in_channels=4 et hidden_dim=32
+    # H-JEPA utilise in_channels=4 et hidden_dim=128
     perception = Perception(in_channels=4, latent_dim=latent_dim).to(device)
-    world_model = WorldModel(latent_dim=latent_dim, action_dim=action_dim, hidden_dim=32, spatial_size=20).to(device)
+    world_model = WorldModel(latent_dim=latent_dim, action_dim=action_dim, hidden_dim=128, spatial_size=20).to(device)
     
     checkpoint_path_v2 = "checkpoints/agent_h_jepa.pth"
     if os.path.exists(checkpoint_path_v2):
@@ -81,11 +82,13 @@ def main():
     target_critic.load_state_dict(online_critic.state_dict())
     for p in target_critic.parameters(): p.requires_grad = False
     
+    astar = MacroPlanner()
+    
     optimizer = optim.Adam(online_critic.parameters(), lr=3e-4)
-    buffer = ReplayBuffer(100000)
+    buffer = ReplayBuffer(5000)
     batch_size = 256
     
-    num_episodes = 5000
+    num_episodes = 1000
     gamma = 0.95
     tau = 0.01
     
@@ -127,13 +130,25 @@ def main():
             
         h_t = world_model.init_hidden(1, device)
         
-        # Imagination pure (Dyna-Q) sur H pas
-        H = 50
+        # Obtention de la trajectoire experte via A*
+        path = astar.get_path(env.agent_pos, env.target_pos, env)
+        if not path:
+            continue
+            
+        H = len(path)
         episode_ic = 0.0
         
+        curr_pos = env.agent_pos
         for step in range(H):
-            # Politique exploratoire aléatoire
-            a_t = random.randint(0, 3)
+            next_pos = path[step]
+            # Déduction de l'action experte
+            if next_pos[0] < curr_pos[0]: a_t = 0
+            elif next_pos[0] > curr_pos[0]: a_t = 1
+            elif next_pos[1] < curr_pos[1]: a_t = 2
+            else: a_t = 3
+                
+            curr_pos = next_pos
+            
             a_t_onehot = F.one_hot(torch.tensor([a_t]), num_classes=4).float().to(device)
             
             # Prédire le futur
@@ -144,7 +159,7 @@ def main():
             # Calcul du Coût Intrinsèque en dur
             c_t = intrinsic_cost(s_t.unsqueeze(0), s_next.unsqueeze(0), s_goal.unsqueeze(0)).item()
             
-            # Stockage de la transition imaginée
+            # Stockage de la transition imaginée (Démonstration)
             buffer.push(s_t, a_t_onehot, s_next, c_t, s_goal)
             
             episode_ic += c_t
@@ -206,19 +221,19 @@ def main():
                 avg_td_loss += loss.item()
                 train_steps += 1
                 
-        avg_intrinsic_cost += (episode_ic / H)
+        avg_intrinsic_cost += (episode_ic / max(1, H))
         
         if (episode + 1) % 50 == 0:
             n = max(train_steps, 1)
             # tqdm will overlap print, but it's fine for simple logging
-            tqdm.write(f"Ep {episode+1:4d}/{num_episodes} | TD_Loss: {avg_td_loss/n:8.4f} | Avg IC: {avg_intrinsic_cost/50:8.4f}")
+            tqdm.write(f"Ep {episode+1:4d}/{num_episodes} | TD_Loss: {avg_td_loss/n:8.4f} | Avg IC: {avg_intrinsic_cost:8.4f}")
             
             with open(log_path, 'a', newline='') as f:
                 csv.writer(f).writerow([
                     time.strftime('%Y-%m-%d %H:%M:%S'),
                     episode + 1,
                     f"{avg_td_loss/n:.4f}",
-                    f"{avg_intrinsic_cost/50:.4f}"
+                    f"{avg_intrinsic_cost:.4f}"
                 ])
                 
             avg_td_loss = 0.0

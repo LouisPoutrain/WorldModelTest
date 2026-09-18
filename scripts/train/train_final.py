@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import random
 
 import sys
-sys.path.append('/Users/poutrainlouis/code/WorldModelTest')
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 from modules.perception import Perception
 from modules.world_model import WorldModel

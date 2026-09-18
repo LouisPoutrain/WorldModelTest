@@ -1,4 +1,8 @@
-torch
-numpy
-matplotlib
-imageio-ffmpeg
+torch>=2.0.0
+numpy>=1.22.0
+matplotlib>=3.5.0
+tqdm>=4.65.0
+scikit-learn>=1.0.0
+imageio>=2.20.0
+imageio-ffmpeg>=0.4.5
+pygame>=2.1.0

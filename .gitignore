@@ -1,7 +1,33 @@
+# Environments
+.venv/
 venv/
+ENV/
+env/bin/
+
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# OS generated files
 .DS_Store
-le-wm_reference/
-*.tar.gz
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Large weights and datasets
 *.pt
+*.tar.gz
+
+# Local references and scratch
+le-wm_reference/
+scratch/
+
+# IDE / Editor artifacts
+.idea/
+.vscode/
+*.swp
+*.swo

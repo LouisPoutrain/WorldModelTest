@@ -58,7 +58,7 @@ class GridBuilder:
         self.perception = Perception(in_channels=4, latent_dim=16).to(self.device)
         self.world_model = WorldModel(latent_dim=16, action_dim=4, hidden_dim=32, spatial_size=10).to(self.device)
         
-        checkpoint = torch.load('checkpoints/agent_h_jepa.pth', map_location=self.device)
+        checkpoint = torch.load('checkpoints/agent_h_jepa_10x10.pth', map_location=self.device)
         self.perception.load_state_dict(checkpoint['perception'])
         self.world_model.load_state_dict(checkpoint['world_model'])
         

@@ -31,3 +31,8 @@ scratch/
 .vscode/
 *.swp
 *.swo
+
+# Packaging and build artifacts
+*.egg-info/
+build/
+dist/

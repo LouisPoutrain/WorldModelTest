@@ -22,17 +22,6 @@ keywords = [
     "sigreg",
     "pytorch"
 ]
-classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence"
-]
 dependencies = [
     "torch>=2.0.0",
     "numpy>=1.22.0",
@@ -53,3 +42,6 @@ dev = [
 Homepage = "https://github.com/LouisPoutrain/WorldModelTest"
 Repository = "https://github.com/LouisPoutrain/WorldModelTest.git"
 Documentation = "https://louispoutrain.github.io/WorldModelTest/docs/site/"
+
+[tool.setuptools.packages.find]
+include = ["modules*", "env*", "utils*"]

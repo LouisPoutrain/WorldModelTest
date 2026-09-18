@@ -12,8 +12,8 @@ An end-to-end implementation and extension of Yann LeCun's **6-module Autonomous
 
 ## Visual Demonstration
 
-![Agent Navigation Demo](media/agent_run.gif)
-*Figure 1: Autonomous agent navigating a procedural grid environment with dynamic obstacle avoidance and energy-constrained goal planning.*
+![H-JEPA Dungeon Navigation Demo](runs/run_2.gif)
+*Figure 1: Autonomous H-JEPA agent navigating a multi-room procedural dungeon with topological door routing, obstacle avoidance, and dead-end memory.*
 
 ---
 

@@ -98,15 +98,25 @@ The architecture strictly mirrors the cognitive modularity proposed by LeCun:
 
 ## Benchmarks and Architectural Evolution
 
-The table below summarizes the quantitative progression across project versions:
+The table below details the quantitative progression and empirical findings across project iterations (as documented in the interactive evolution timeline):
 
-| Version | Environment | Planning Algorithm | In-Distribution Success | OOD / U-Trap Success | Multi-Room Dungeon Success | Primary Bottleneck / Finding |
-|---|---|---|---|---|---|---|
-| **V1** | 10x10 GridWorld | Pure CEM (Horizon 10) | 50.0% | 0.0% | N/A | CEM horizon limit; local minima in concave obstacles |
-| **V2** | 10x10 GridWorld | CEM + Monte Carlo Critic | 75.0% | 15.0% | N/A | High variance of MC returns in sparse reward settings |
-| **V3** | 10x10 GridWorld | H-JEPA (Waypoint A*) | 92.0% | 85.0% | N/A | Handcrafted waypoints; fragile across arbitrary topographies |
-| **V4** | 10x10 GridWorld | JEPA + Spatial TD Critic | 95.0% | 90.0% | N/A | Validated pure TD-learning in latent space without A* assistance |
-| **V5** | **20x20 Dungeon** | **H-JEPA + TD Critic + Door Memory** | **100.0%** | **100.0%** | **98.0%** | **Solved long-horizon topological routing and dead-end trapping** |
+| Version | Environment | Architecture & Planning | Success Rate | Avg Steps | Key Scientific Finding & Bottleneck |
+|---|---|---|---|---|---|
+| **V1** | 10x10 Simple Grid | ConvNet + GRU (RSSM) + Pure CEM | **32%** | 95 | CEM falls into local minima (Manhattan trap); crashes into concave obstacles. |
+| **V2** | 10x10 with Obstacles | JEPA + EMA Target + SIGReg + CEM | **47%** | 82 | Zero latent collapse (Rollout drift < 0.5 MSE at t+10); CEM horizon limit (0% on U-traps). |
+| **V3** | 10x10 Complex Walls | H-JEPA (Macro Spatial Critic + Micro A*) | **82%** | 58 | Breakthrough on 10x10 by separating topological routing from obstacle avoidance. |
+| **V4** | 20x20 4-Room Dungeon | H-JEPA + Stateful Dead-End Door Memory | **66%** | 49 | Door memory stops cyclic ping-pong, but 10x10-trained Critic suffers from discount dilution. |
+| **V5** | **20x20 Native Dungeon** | **Native 20x20 JEPA + Offline TD Critic + Door Memory** | **62%** | **46** | Native 20x20 scaling (400 cells, 4 rooms). Cuts steps to 46 (vs 95 in V1). Outperforms pure CEM (~0%). |
+
+### Baseline Comparison on 20x20 Multi-Room Dungeon (`eval/eval_dungeon.py`)
+
+| Agent / Planner | Success Rate | Avg Steps | Behavior Analysis |
+|---|---|---|---|
+| **Constrained A\*** (`astar_bridé`) | 0.0% | N/A | Fails as soon as the target is outside the current room. |
+| **Pure CEM Planner** (`cem`) | ~0.0% | N/A | Horizon (H=5) is too short to explore or exit multi-room layouts. |
+| **H-JEPA (V5)** | **62.0%** | **46** | Latent Spatial Critic evaluates room exits; Dead-End memory prevents loops. |
+
+*Note on V5 convergence:* On 20x20 grids spanning 4 rooms, trajectories average 45-60 steps. With discount factor gamma = 0.95, the effective Bellman signal decays significantly (0.95^60 approx 0.04), creating a credit assignment barrier across multiple doors. Future directions include reward shaping or higher discount factors (gamma = 0.999).
 
 Detailed diagnostic reports, ablation studies, and mathematical derivations are available in [`docs/reports/`](docs/reports/).
 
